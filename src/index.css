@@ -4,8 +4,8 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #f4f1eb;
-  background: #101011;
+  color: #232428;
+  background: #ffffff;
   --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
@@ -25,7 +25,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #101011;
+  background: #ffffff;
 }
 
 button {
@@ -33,6 +33,6 @@ button {
 }
 
 ::selection {
-  background: #c1a0ff;
-  color: #17131d;
+  background: #eeedff;
+  color: #232428;
 }
