@@ -10,7 +10,6 @@ const games = [
     description: 'A quick challenge for your reflexes and focus.',
     categories: ['Tests'],
     type: 'reaction',
-    tag: 'Quick play',
     playable: true,
   },
   {
@@ -19,7 +18,6 @@ const games = [
     description: 'Use the clues to find your way around the world.',
     categories: ['Guessing', 'Knowledge'],
     type: 'country',
-    tag: 'Geography',
     playable: false,
   },
   {
@@ -28,7 +26,6 @@ const games = [
     description: 'Can you tell what is real at a glance?',
     categories: ['Visual'],
     type: 'visual',
-    tag: 'Look closer',
     playable: false,
   },
 ];
@@ -181,33 +178,32 @@ function Sidebar({ section, selectedCategory, onNavigate, onCategory, onPage }) 
   );
 }
 
-function GameThumbnail({ game, featured = false }) {
+function GameThumbnail({ game }) {
   return (
-    <div className={`game-thumbnail thumbnail-${game.type}${featured ? ' featured-thumbnail' : ''}`} aria-hidden="true">
-      <div className="thumbnail-shape shape-one" />
-      <div className="thumbnail-shape shape-two" />
-      <div className="thumbnail-shape shape-three" />
+    <div className={`game-thumbnail thumbnail-${game.type}`} aria-hidden="true">
       {game.type === 'reaction' && (
         <div className="reaction-visual">
-          <span className="reaction-core"><span /></span>
-          <span className="reaction-cross">+</span>
+          <span className="reaction-ring"><span><i /></span></span>
         </div>
       )}
       {game.type === 'country' && (
         <div className="country-visual">
-          <span className="country-grid" />
-          <span className="country-pin">●</span>
-          <span className="country-tag">WHERE AM I?</span>
+          <svg viewBox="0 0 160 110" role="presentation">
+            <path d="m20 31 12-12 16 2 7 11 13 1 5 13-8 7-4 15-13 8-12-8-4-14-12-5Z" />
+            <path d="m76 26 12-8 12 5 3 11-8 8-2 13-8 8-11-8 3-12-8-7Z" />
+            <path d="m99 56 14-8 19 4 6 12-9 14-17 2-11-9Z" />
+            <path d="m53 80 13-7 8 9-5 9-12 1Z" />
+            <circle cx="111" cy="64" r="3" />
+          </svg>
         </div>
       )}
       {game.type === 'visual' && (
         <div className="visual-visual">
-          <span className="visual-sun" />
-          <span className="visual-window" />
-          <span className="visual-caption">REAL / GENERATED</span>
+          <span className="visual-card visual-card-one"><i /></span>
+          <span className="visual-card visual-card-two"><i /></span>
+          <span className="visual-question">?</span>
         </div>
       )}
-      {featured && <span className="thumbnail-caption">WHITEBOX ORIGINAL</span>}
     </div>
   );
 }
@@ -238,49 +234,10 @@ function GameCard({ game, favorite, onFavorite, onOpen }) {
       <div className="game-card-details">
         <div className="game-title-line">
           <h3>{game.title}</h3>
-          <span className="game-tag">{game.tag}</span>
         </div>
-        <p>{game.description}</p>
+        <p>{game.categories.join(' · ')}{!game.playable && ' · Coming soon'}</p>
       </div>
     </article>
-  );
-}
-
-function CategoryTiles({ onSelect }) {
-  const categoryDetails = [
-    { name: 'Tests', description: 'Challenge your reflexes', tone: 'lavender', mark: '01' },
-    { name: 'Guessing', description: 'Take a clever guess', tone: 'peach', mark: '?' },
-    { name: 'Knowledge', description: 'Put your facts to work', tone: 'mint', mark: 'A+' },
-    { name: 'Visual', description: 'Trust your eyes?', tone: 'blue', mark: '◉' },
-  ];
-
-  return (
-    <div className="category-tile-grid">
-      {categoryDetails.map(({ name, description, tone, mark }) => (
-        <button key={name} className={`category-tile category-${tone}`} type="button" onClick={() => onSelect(name)}>
-          <span className="category-tile-mark">{mark}</span>
-          <span className="category-tile-text"><strong>{name}</strong><small>{description}</small></span>
-          <Icon name="arrow" size={16} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SectionHeading({ eyebrow, title, description, action, onAction }) {
-  return (
-    <div className="section-heading">
-      <div>
-        {eyebrow && <p className="section-eyebrow">{eyebrow}</p>}
-        <h2>{title}</h2>
-        {description && <p className="section-description">{description}</p>}
-      </div>
-      {action && (
-        <button className="section-action" type="button" onClick={onAction}>
-          {action}<Icon name="arrow" size={16} />
-        </button>
-      )}
-    </div>
   );
 }
 
@@ -309,7 +266,7 @@ function App() {
       || game.title.toLowerCase().includes(query)
       || game.description.toLowerCase().includes(query)
       || game.categories.some((category) => category.toLowerCase().includes(query));
-    const matchesCategory = section !== 'categories' && section !== 'discover'
+    const matchesCategory = section !== 'categories' && section !== 'discover' && section !== 'home'
       || selectedCategory === 'All games'
       || game.categories.includes(selectedCategory);
     const matchesFavorites = section !== 'favorites' || favorites.includes(game.id);
@@ -377,6 +334,7 @@ function App() {
   }
 
   const sectionTitles = {
+    home: 'All games',
     discover: 'Discover games',
     categories: selectedCategory,
     favorites: 'Your favorites',
@@ -395,77 +353,24 @@ function App() {
           onPage={setCurrentView}
         />
         <main className="main-content">
-          {currentView === 'browse' && section === 'home' && !search.trim() && (
-            <>
-              <section className="welcome-row">
-                <div>
-                  <p className="welcome-eyebrow">WELCOME TO WHITEBOX</p>
-                  <h1>Find your next <span>favorite.</span></h1>
-                  <p className="welcome-description">Quick games and curious challenges, all in one place.</p>
-                </div>
-                <div className="welcome-badge" aria-hidden="true"><span>W</span><small>PLAY YOUR WAY</small></div>
-              </section>
-
-              <section className="featured-section" aria-labelledby="featured-heading">
-                <SectionHeading eyebrow="PICK UP AND PLAY" title="Featured game" />
-                <article className="featured-card">
-                  <GameThumbnail game={games[0]} featured />
-                  <div className="featured-copy">
-                    <span className="featured-label"><span className="online-dot" /> WHITEBOX PICK</span>
-                    <h2 id="featured-heading">Reaction Test</h2>
-                    <p>A quick challenge for your reflexes and focus. Ready to see how sharp you are?</p>
-                    <div className="featured-meta"><span>Tests</span><span>Quick play</span></div>
-                    <button className="primary-button" type="button" onClick={() => openGame('reaction-test')}>
-                      <Icon name="play" size={18} /> View game
-                    </button>
-                  </div>
-                </article>
-              </section>
-
-              <section className="browse-categories" aria-labelledby="category-heading">
-                <SectionHeading
-                  eyebrow="FIND YOUR KIND OF FUN"
-                  title="Browse categories"
-                  action="All games"
-                  onAction={() => navigate('discover')}
-                />
-                <CategoryTiles onSelect={navigateCategory} />
-              </section>
-
-              <section className="popular-section" aria-labelledby="popular-heading">
-                <SectionHeading
-                  eyebrow="MORE TO EXPLORE"
-                  title="Popular games"
-                  description="Popularity signals will appear here when play data is available."
-                  action="Discover all"
-                  onAction={() => navigate('discover')}
-                />
-                {gameCards(games)}
-              </section>
-            </>
-          )}
-
-          {currentView === 'browse' && (section !== 'home' || search.trim()) && (
+          {currentView === 'browse' && (
             <section className="discovery-view">
               <div className="discovery-header">
                 <div>
-                  <p className="welcome-eyebrow">
-                    {search.trim() ? 'SEARCH WHITEBOX' : section === 'favorites' || section === 'recent' ? 'YOUR LIBRARY' : 'THE GAME LIBRARY'}
+                  <p className="discovery-kicker">
+                    {search.trim() ? 'SEARCH RESULTS' : section === 'favorites' || section === 'recent' ? 'YOUR LIBRARY' : 'WHITEBOX GAMES'}
                   </p>
-                  <h1>{search.trim() ? 'Search results' : sectionTitles[section] || 'Discover games'}</h1>
-                  <p className="welcome-description">
+                  <h1>
                     {search.trim()
-                      ? `Results for “${search.trim()}”`
-                      : section === 'favorites'
-                        ? 'The games you have saved for later.'
-                        : section === 'recent'
-                          ? 'Pick up where you left off.'
-                          : 'Browse the collection and find something to play.'}
-                  </p>
+                      ? 'Search results'
+                      : section === 'home' && selectedCategory !== 'All games'
+                        ? selectedCategory
+                        : sectionTitles[section] || 'Discover games'}
+                  </h1>
                 </div>
                 <span className="result-count">{filteredGames.length} {filteredGames.length === 1 ? 'GAME' : 'GAMES'}</span>
               </div>
-              {section === 'discover' && !search.trim() && (
+              {(section === 'discover' || section === 'home') && !search.trim() && (
                 <div className="filter-row" role="group" aria-label="Filter games by category">
                   {categories.map((category) => (
                     <button
@@ -485,7 +390,7 @@ function App() {
                 : <EmptyState
                     title={search.trim() ? 'No games found' : section === 'favorites' ? 'No favorites yet' : section === 'recent' ? 'Nothing played yet' : 'No games here just yet'}
                     description={search.trim() ? 'Try another title or category.' : section === 'favorites' ? 'Tap the heart on a game to save it here.' : section === 'recent' ? 'Open a game preview and it will show up here.' : 'Try browsing all games instead.'}
-                    onReset={search.trim() || section === 'favorites' || section === 'recent' ? undefined : () => navigate('discover')}
+                    onReset={section === 'categories' || section === 'discover' ? () => navigate('home') : undefined}
                   />}
             </section>
           )}
@@ -493,7 +398,7 @@ function App() {
           {currentView === 'create' && (
             <section className="placeholder-page">
               <span className="placeholder-icon"><Icon name="plus" size={27} /></span>
-              <p className="welcome-eyebrow">WHITEBOX STUDIO</p>
+              <p className="discovery-kicker">WHITEBOX STUDIO</p>
               <h1>Create something <span>playable.</span></h1>
               <p>The visual Game Creator is planned for a future release. It is not available yet.</p>
               <button className="primary-button" type="button" onClick={goHome}>Back to games</button>
@@ -503,7 +408,7 @@ function App() {
           {currentView === 'about' && (
             <section className="placeholder-page">
               <span className="placeholder-icon"><span className="brand-symbol"><span /></span></span>
-              <p className="welcome-eyebrow">ABOUT WHITEBOX</p>
+              <p className="discovery-kicker">ABOUT WHITEBOX</p>
               <h1>A little room <span>to play.</span></h1>
               <p>WhiteBox is a browser-based home for quick games, curious challenges, and friendly competition.</p>
               <button className="primary-button" type="button" onClick={goHome}>Explore games</button>
@@ -514,9 +419,9 @@ function App() {
             <section className="game-detail">
               <button className="back-link" type="button" onClick={goHome}>← Back to games</button>
               <div className="game-detail-card">
-                <GameThumbnail game={games.find((game) => game.id === currentView)} featured />
+                <GameThumbnail game={games.find((game) => game.id === currentView)} />
                 <div className="game-detail-copy">
-                  <p className="welcome-eyebrow">GAME PREVIEW</p>
+                  <p className="discovery-kicker">GAME PREVIEW</p>
                   <h1>Reaction Test</h1>
                   <p>This game is not playable yet. Reaction timing and scoring are not implemented.</p>
                   <span className="preview-notice">Preview only · gameplay is in development</span>
