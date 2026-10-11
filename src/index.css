@@ -1,15 +1,32 @@
 :root {
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  /* Sticker Bomb — Balanced palette */
+  --paper: #f4f2ea;
+  --ink: #171717;
+  --lime: #d9ff43;
+  --gray: #858585;
+  --white: #ffffff;
+
+  /* Supporting pastels for game art and category accents */
+  --coral: #ff8f7a;
+  --mint: #9fe3c0;
+  --lavender: #c9b8f0;
+  --sky: #9cd2f0;
+  --pink: #ffc2d4;
+
+  --line: #e0dccd;
+  --line-soft: #eae6d8;
+
+  --font-display: 'Arial Black', 'Arial Bold', 'Segoe UI', sans-serif;
+  --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-hand: 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive;
+
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #232428;
-  background: #ffffff;
-  --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-
-  font-optical-sizing: auto;
 }
 
 * {
@@ -25,14 +42,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #ffffff;
-}
-
-button {
-  font: inherit;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 ::selection {
-  background: #eeedff;
-  color: #232428;
+  background: var(--lime);
+  color: var(--ink);
 }

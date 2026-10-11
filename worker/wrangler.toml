@@ -1,0 +1,25 @@
+# WhiteBox multiplayer Worker — ISOLATED config.
+#
+# This is a self-contained Worker for local development and (optionally) later
+# deployment. It does NOT modify or replace any existing WhiteBox production
+# deployment, DNS, or bindings.
+#
+# Local dev:   npm run worker:dev      (wrangler dev -> http://127.0.0.1:8787)
+# The browser client defaults to ws://127.0.0.1:8787 (see VITE_MP_URL).
+
+name = "whitebox-mp"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+# One Durable Object class backs all rooms; each room code maps to one instance.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "GameRoom"
+
+# SQLite-backed Durable Objects (current recommended storage for new classes).
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
+
+[observability]
+enabled = true

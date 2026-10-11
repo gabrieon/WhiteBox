@@ -1,0 +1,189 @@
+.reaction-game {
+  max-width: 760px;
+  margin-top: 14px;
+}
+
+.reaction-panel {
+  display: grid;
+  width: 100%;
+  min-height: 240px;
+  place-items: center;
+  padding: 28px 20px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-align: center;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.reaction-panel.is-waiting {
+  border-color: #191919;
+  background: #191919;
+  color: #fff;
+}
+
+.reaction-panel.is-ready {
+  border-color: #cfdccf;
+  background: #e5eee5;
+  color: #191919;
+}
+
+.reaction-panel.is-tooSoon {
+  border-color: #e6cfcf;
+  background: #f5e5e5;
+  color: #191919;
+}
+
+.reaction-panel.is-result {
+  border-color: #cfd3e6;
+  background: #e5e8f5;
+  color: #191919;
+}
+
+.reaction-panel-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.reaction-kicker {
+  color: currentColor;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  opacity: 0.72;
+}
+
+.reaction-headline {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.reaction-panel.is-result .reaction-headline {
+  font-size: 46px;
+  letter-spacing: -1.5px;
+  line-height: 1.05;
+}
+
+.reaction-detail {
+  max-width: 380px;
+  font-size: 11px;
+  line-height: 1.6;
+  opacity: 0.78;
+}
+
+.reaction-again {
+  margin-top: 5px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.reaction-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.reaction-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 74px;
+}
+
+.reaction-stat-label {
+  color: #707070;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+}
+
+.reaction-stat-value {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.reaction-reset {
+  margin-left: auto;
+  min-height: 29px;
+  padding: 0 11px;
+  border: 1px solid #dedede;
+  border-radius: 4px;
+  background: #fff;
+  color: #444;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 10px;
+}
+
+.reaction-reset:hover {
+  background: #f5f5f5;
+}
+
+.reaction-history {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.reaction-history-label {
+  flex: 0 0 auto;
+  color: #707070;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+}
+
+.reaction-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.reaction-history-chip {
+  padding: 3px 7px;
+  border: 1px solid #dedede;
+  border-radius: 3px;
+  color: #444;
+  font-size: 9px;
+}
+
+.reaction-hint {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .reaction-panel {
+    min-height: 200px;
+  }
+
+  .reaction-panel.is-result .reaction-headline {
+    font-size: 38px;
+  }
+
+  .reaction-stats {
+    flex-wrap: wrap;
+  }
+
+  .reaction-reset {
+    margin-left: 0;
+  }
+}
