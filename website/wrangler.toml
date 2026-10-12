@@ -1,0 +1,15 @@
+# WhiteBox website hosting — serves the built frontend (dist/) as the
+# `whitebox` Worker with Static Assets. Custom domains attached to this
+# Worker (rarelyknown.in, www.rarelyknown.in) keep working across deploys;
+# only the Worker's content is replaced, never its routing.
+#
+# Deploy:  npm run build:prod   (bakes production env vars, see package.json)
+#          npx wrangler deploy --config website/wrangler.toml
+
+name = "whitebox"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "../dist"
+not_found_handling = "single-page-application"

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "deploy:site": "wrangler deploy --config website/wrangler.toml",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node scripts/test-sdk.mjs",
