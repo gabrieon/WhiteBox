@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { findGame, games, isPlayable, listCategories } from './games/registry.js';
 import GameStage from './components/GameStage.jsx';
@@ -37,6 +37,33 @@ function writeList(key, value) {
     // Storage can be unavailable (private mode, blocked cookies). The list then
     // simply resets on reload instead of throwing.
   }
+}
+
+// --- hash routing -----------------------------------------------------------
+// The URL hash is the single source of truth for where the player is:
+//   #/                  home
+//   #/explore            full library
+//   #/favorites          saved games
+//   #/recent             recently played
+//   #/category/<name>    one genre
+//   #/game/<id>          play a game (shareable link)
+//   #/create, #/about    info pages
+// Every navigation writes the hash; a `hashchange` listener applies it back to
+// state. Browser back/forward and shared links therefore work for free.
+
+function safeDecode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return '';
+  }
+}
+
+function parseHash() {
+  const raw = window.location.hash.replace(/^#\/?/, '');
+  const slash = raw.indexOf('/');
+  if (slash === -1) return { head: raw, rest: '' };
+  return { head: raw.slice(0, slash), rest: safeDecode(raw.slice(slash + 1)) };
 }
 
 export default function App() {
@@ -90,33 +117,102 @@ export default function App() {
     game.categories.includes('Multiplayer') || ['1v1', 'Party', 'Ranked'].includes(game.mode),
   ).slice(0, 4), []);
 
-  function goHome() {
-    setCurrentView('browse');
-    setSection('home');
-    setSelectedCategory('All games');
-    setSearch('');
-  }
-
-  function navigate(nextSection) {
-    setCurrentView('browse');
-    setSection(nextSection);
-    if (nextSection === 'home' || nextSection === 'explore') setSelectedCategory('All games');
-  }
-
-  function navigateCategory(category) {
-    setCurrentView('browse');
-    setSection('categories');
-    setSelectedCategory(category);
-  }
-
-  function openGame(gameId) {
-    if (!isPlayable(findGame(gameId))) return;
+  const recordRecent = useCallback((gameId) => {
     setRecentGames((current) => {
       const next = [gameId, ...current.filter((id) => id !== gameId)].slice(0, MAX_RECENT);
       writeList(RECENT_KEY, next);
       return next;
     });
-    setCurrentView(gameId);
+  }, []);
+
+  // Apply the current URL hash to state. Unknown routes fall back to home and
+  // fix the URL with replaceState (which does not add a history entry).
+  const applyHash = useCallback(() => {
+    const { head, rest } = parseHash();
+    setSearch('');
+    switch (head) {
+      case '':
+        setCurrentView('browse');
+        setSection('home');
+        setSelectedCategory('All games');
+        break;
+      case 'explore':
+      case 'favorites':
+      case 'recent':
+        setCurrentView('browse');
+        setSection(head);
+        setSelectedCategory('All games');
+        break;
+      case 'category':
+        if (rest && categories.includes(rest)) {
+          setCurrentView('browse');
+          setSection('categories');
+          setSelectedCategory(rest);
+        } else {
+          window.history.replaceState(null, '', '#/');
+          setCurrentView('browse');
+          setSection('home');
+          setSelectedCategory('All games');
+        }
+        break;
+      case 'game': {
+        const game = findGame(rest);
+        if (game && isPlayable(game)) {
+          recordRecent(game.id);
+          setCurrentView(game.id);
+        } else {
+          window.history.replaceState(null, '', '#/');
+          setCurrentView('browse');
+          setSection('home');
+          setSelectedCategory('All games');
+        }
+        break;
+      }
+      case 'create':
+      case 'about':
+        setCurrentView(head);
+        break;
+      default:
+        window.history.replaceState(null, '', '#/');
+        setCurrentView('browse');
+        setSection('home');
+        setSelectedCategory('All games');
+        break;
+    }
+  }, [recordRecent]);
+
+  useEffect(() => {
+    // One-time sync from the URL (external store) into state on mount, plus
+    // the hashchange subscription. This is the documented exception to the
+    // set-state-in-effect rule: state must reflect an external system here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, [applyHash]);
+
+  // All navigation goes through the hash. Clicking the active destination
+  // re-applies it (resetting scroll and filters) instead of doing nothing.
+  const goHash = useCallback((hash) => {
+    if (window.location.hash === hash) applyHash();
+    else window.location.hash = hash;
+  }, [applyHash]);
+
+  function goHome() {
+    goHash('#/');
+  }
+
+  function navigate(nextSection) {
+    goHash(nextSection === 'home' ? '#/' : `#/${nextSection}`);
+  }
+
+  function navigateCategory(category) {
+    goHash(`#/category/${encodeURIComponent(category)}`);
+  }
+
+  function openGame(gameId) {
+    if (!isPlayable(findGame(gameId))) return;
+    goHash(`#/game/${gameId}`);
   }
 
   function toggleFavorite(gameId) {
@@ -130,15 +226,9 @@ export default function App() {
   }
 
   function searchGames(nextQuery) {
+    // Search is a filter over the current view, not a route: typing never
+    // touches the hash, so the back button still means "where I was".
     setSearch(nextQuery);
-    // Leaving the query empty should return to where the player was, not strand
-    // them on a stale results view.
-    if (nextQuery.trim()) {
-      setCurrentView('browse');
-      setSection('explore');
-    } else if (section === 'explore') {
-      setSection('home');
-    }
   }
 
   const cardProps = {
@@ -151,7 +241,7 @@ export default function App() {
   function renderHome() {
     return (
       <>
-        <Hero onExplore={() => navigate('explore')} onCreate={() => setCurrentView('create')} />
+        <Hero onExplore={() => navigate('explore')} onCreate={() => goHash('#/create')} />
 
         <section className="wb-section">
           <SectionHeading kicker="START HERE" title="Featured games" actionLabel="View library" onAction={() => navigate('explore')} />
@@ -221,7 +311,7 @@ export default function App() {
         onNavigate={goHome}
         onExplore={() => navigate('explore')}
         activeView={canPlay ? null : section}
-        onOpenCreate={() => setCurrentView('create')}
+        onOpenCreate={() => goHash('#/create')}
       />
 
       <div className="wb-layout">
@@ -231,8 +321,8 @@ export default function App() {
           categories={sidebarCategories}
           onNavigate={navigate}
           onCategory={navigateCategory}
-          onOpenCreate={() => setCurrentView('create')}
-          onOpenAbout={() => setCurrentView('about')}
+          onOpenCreate={() => goHash('#/create')}
+          onOpenAbout={() => goHash('#/about')}
         />
 
         <main className="wb-main">
