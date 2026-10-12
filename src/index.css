@@ -1,24 +1,29 @@
 :root {
-  /* Sticker Bomb — Balanced palette */
-  --paper: #f4f2ea;
-  --ink: #171717;
-  --lime: #d9ff43;
-  --gray: #858585;
-  --white: #ffffff;
+  color-scheme: dark;
 
-  /* Supporting pastels for game art and category accents */
-  --coral: #ff8f7a;
-  --mint: #9fe3c0;
-  --lavender: #c9b8f0;
-  --sky: #9cd2f0;
-  --pink: #ffc2d4;
+  /* Flat grey platform palette. No gradients anywhere in the UI. */
+  --paper: #171717;
+  --paper-deep: #0f0f0f;
+  --surface: #1f1f1f;
+  --surface-raised: #262626;
+  --surface-hover: #2e2e2e;
+  --ink: #ececec;
+  --text: #161616;
+  --white: #f5f5f5;
+  --gray: #a3a3a3;
+  --muted: #737373;
+  --line: #383838;
+  --line-soft: #2a2a2a;
+  --lime: #d9d9d9;
+  --coral: #8c8c8c;
+  --mint: #b8b8b8;
+  --lavender: #a3a3a3;
+  --sky: #c9c9c9;
+  --pink: #999999;
 
-  --line: #e0dccd;
-  --line-soft: #eae6d8;
-
-  --font-display: 'Arial Black', 'Arial Bold', 'Segoe UI', sans-serif;
-  --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  --font-hand: 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive;
+  --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-hand: Inter, ui-sans-serif, system-ui, sans-serif;
 
   color: var(--ink);
   background: var(--paper);
@@ -35,6 +40,7 @@
 
 html {
   min-width: 320px;
+  background: var(--paper-deep);
   scroll-behavior: smooth;
 }
 
@@ -46,7 +52,18 @@ body {
   color: var(--ink);
 }
 
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(220, 220, 220, 0.65);
+  outline-offset: 3px;
+}
+
 ::selection {
-  background: var(--lime);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--white);
 }

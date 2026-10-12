@@ -59,8 +59,10 @@ class GameErrorBoundary extends Component {
 function LoadingOverlay({ label = 'Loading game…' }) {
   return (
     <div className="wb-host-overlay" role="status" aria-live="polite">
-      <div className="wb-host-spinner" aria-hidden="true" />
+      <div className="wb-host-orb" aria-hidden="true" />
+      <p className="wb-host-kicker">LOADING ROOM</p>
       <div className="wb-host-title">{label}</div>
+      <div className="wb-host-loadbar" aria-hidden="true"><i /></div>
     </div>
   );
 }
@@ -68,6 +70,7 @@ function LoadingOverlay({ label = 'Loading game…' }) {
 function ErrorOverlay({ error, onRetry }) {
   return (
     <div className="wb-host-overlay is-error" role="alert">
+      <p className="wb-host-kicker">ROOM OFFLINE</p>
       <div className="wb-host-title">Something broke</div>
       <div className="wb-host-msg">{error?.message || String(error)}</div>
       <button type="button" className="wb-host-btn" onClick={onRetry}>Try again</button>

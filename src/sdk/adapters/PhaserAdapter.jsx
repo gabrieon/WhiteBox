@@ -117,11 +117,11 @@ export default function PhaserAdapter({ manifest, ctx }) {
         style={{
           position: 'relative',
           width: '100%',
-          height: 'min(70vh, 560px)',
+          height: '100%',
           minHeight: '320px',
-          borderRadius: '16px',
+          borderRadius: '0',
           overflow: 'hidden',
-          border: '2px solid var(--ink)',
+          border: '0',
         }}
       />
     </div>

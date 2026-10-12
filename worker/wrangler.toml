@@ -21,5 +21,20 @@ class_name = "GameRoom"
 tag = "v1"
 new_sqlite_classes = ["GameRoom"]
 
+# Sign-in sessions. Stores an opaque session id -> verified Google profile.
+# Create with:  npx wrangler kv namespace create SESSIONS
+# then paste the returned id below.
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "13d23a07e6ec4e66b372dab75e44d053"
+
+# Google OAuth. Set with:  npx wrangler secret put GOOGLE_CLIENT_ID
+# (secrets are encrypted; do NOT commit a client id as a plain var)
+
+# Origins allowed to call the auth endpoints with credentials.
+# Comma-separated. Localhost dev origins are always allowed.
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelyknown.in"
+
 [observability]
 enabled = true

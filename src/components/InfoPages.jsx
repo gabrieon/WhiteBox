@@ -1,83 +1,68 @@
-import { Star, Sparkle, ArrowScribble } from './Doodles.jsx';
-
 function CreatorBox() {
   return (
-    <svg className="wb-create-art" viewBox="0 0 200 160" role="img" aria-label="A closed box waiting to be opened">
-      <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
-        <path d="M100 26 152 50 100 74 48 50Z" fill="var(--lime)" />
-        <path d="M48 50v58l52 24V74Z" fill="var(--white)" />
-        <path d="M152 50v58l-52 24V74Z" fill="var(--paper)" />
-        <path d="M100 74v58" fill="none" />
-      </g>
-      <g transform="rotate(-8 78 96)">
-        <rect x="58" y="86" width="44" height="20" rx="4" fill="var(--pink)" stroke="var(--ink)" strokeWidth="2" />
-        <text x="80" y="100" textAnchor="middle" fontFamily="var(--font-hand)" fontSize="11" fill="var(--ink)">soon…</text>
-      </g>
-      <g stroke="var(--ink)" strokeWidth="2" fill="none" strokeLinecap="round">
-        <path d="M100 12v-6M70 20l-5-5M130 20l5-5" />
-      </g>
-      <path d="M160 96l4 8 9 1-6 6 1 9-8-4-8 4 1-9-6-6 9-1Z" fill="var(--coral)" stroke="var(--ink)" strokeWidth="1.6" />
+    <svg className="wb-create-art" viewBox="0 0 220 180" role="img" aria-label="An abstract game room illustration">
+      <rect x="20" y="22" width="180" height="136" rx="20" fill="#2b2b2b" stroke="var(--line)" strokeWidth="2" />
+      <rect x="39" y="43" width="142" height="20" rx="7" fill="var(--surface-raised)" />
+      <circle cx="53" cy="53" r="4" fill="var(--coral)" />
+      <circle cx="66" cy="53" r="4" fill="var(--lime)" />
+      <rect x="39" y="76" width="68" height="62" rx="11" fill="var(--lavender)" opacity="0.92" />
+      <rect x="118" y="76" width="63" height="27" rx="9" fill="var(--sky)" opacity="0.92" />
+      <rect x="118" y="112" width="63" height="26" rx="9" fill="var(--mint)" opacity="0.92" />
+      <path d="M56 120 76 98l13 13 12-11" fill="none" stroke="#1a1a1a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M133 89h33M133 125h30" stroke="#1a1a1a" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="186" cy="31" r="12" fill="var(--lime)" />
+      <path d="M182 31h8M186 27v8" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
 const plannedSteps = [
-  { title: 'Describe it', body: 'Tell the creator what your game is in plain words.' },
-  { title: 'An AI agent builds it', body: 'A coding agent turns the description into a real, playable module.' },
-  { title: 'Preview & test', body: 'Play it in the browser and iterate until it feels right.' },
-  { title: 'Publish', body: 'Ship it to the WhiteBox library for everyone to play.' },
+  { title: 'Describe your idea', body: 'Start with a game loop, a challenge, or a room you want people to share.' },
+  { title: 'Build and test', body: 'Use the studio workflow to prototype it in the browser.' },
+  { title: 'Publish a room', body: 'When it is ready, share it with the WhiteBox community.' },
 ];
 
 export function CreatePage({ onBack }) {
   return (
     <section className="wb-page wb-page-create">
-      <Star className="wb-page-doodle wb-page-doodle-one" size={26} />
-      <Sparkle className="wb-page-doodle wb-page-doodle-two" size={22} />
-
       <div className="wb-page-copy">
-        <p className="wb-section-kicker">whitebox studio</p>
-        <h1 className="wb-page-title">
-          Create Something <span className="wb-hero-highlight">Weird.</span>
-        </h1>
+        <p className="wb-page-eyebrow">WHITEBOX STUDIO · IN DEVELOPMENT</p>
+        <h1 className="wb-page-title">Make the next game people keep coming back to.</h1>
         <p className="wb-page-lede">
-          WhiteBox is building a visual game creator where you describe a game and an
-          AI coding agent builds it for you — then you preview, test and publish it,
-          all in the browser.
+          WhiteBox Studio is the planned creation layer for browser-first games: design a concept, test it quickly, and publish a room for players.
         </p>
 
         <div className="wb-create-status" role="status">
-          <span className="wb-sticker wb-sticker-lime">in development</span>
-          <p>
-            The creator is not available yet. Nothing below is live — there is no prompt
-            box, no generation and no publishing until the real workflow ships.
-          </p>
+          <span className="wb-live-dot" aria-hidden="true" />
+          <div>
+            <strong>Studio is being built</strong>
+            <p>The creator is not available yet. This page is a preview of the workflow, not a live publishing tool.</p>
+          </div>
         </div>
 
         <ol className="wb-create-steps">
           {plannedSteps.map((step, index) => (
             <li className="wb-create-step" key={step.title}>
-              <span className="wb-create-step-num" aria-hidden="true">{index + 1}</span>
+              <span className="wb-create-step-num" aria-hidden="true">0{index + 1}</span>
               <div>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
               </div>
-              <span className="wb-create-step-tag">planned</span>
             </li>
           ))}
         </ol>
 
-        <p className="wb-page-hand">
-          <ArrowScribble width={56} height={36} />
-          meanwhile, go play something
-        </p>
-        <button type="button" className="wb-btn wb-btn-primary" onClick={onBack}>
-          Back to games
-        </button>
+        <button type="button" className="wb-btn wb-btn-primary" onClick={onBack}>Explore games</button>
       </div>
 
-      <div className="wb-page-visual">
+      <aside className="wb-studio-preview" aria-label="Studio preview">
         <CreatorBox />
-      </div>
+        <div className="wb-studio-preview-copy">
+          <span className="wb-studio-preview-label">CONCEPT CARD</span>
+          <strong>Map Pin Duel</strong>
+          <span>1v1 · Geography · Fast rounds</span>
+        </div>
+      </aside>
     </section>
   );
 }
@@ -86,22 +71,20 @@ export function AboutPage({ onBack }) {
   return (
     <section className="wb-page wb-page-about">
       <div className="wb-page-copy">
-        <p className="wb-section-kicker">about whitebox</p>
-        <h1 className="wb-page-title">
-          A little room <span className="wb-hero-highlight">to play.</span>
-        </h1>
+        <p className="wb-page-eyebrow">ABOUT WHITEBOX</p>
+        <h1 className="wb-page-title">A game library built for instant play.</h1>
         <p className="wb-page-lede">
-          WhiteBox is a browser-based home for quick games, curious challenges and
-          friendly competition. No installs, no accounts required — just open the box
-          and see what falls out.
+          WhiteBox is a browser-first home for quick challenges, competitive rooms, and creator-made games. Open a tab, choose a game, and get playing.
         </p>
         <p className="wb-page-lede">
-          Every game keeps its own look and feel. The stickers and doodles belong to the
-          platform; the games inside are free to be whatever they want to be.
+          The platform is still growing. Today, you can explore the first playable games and the catalog of rooms in development.
         </p>
-        <button type="button" className="wb-btn wb-btn-primary" onClick={onBack}>
-          Explore games
-        </button>
+        <div className="wb-about-values">
+          <span>NO DOWNLOADS</span>
+          <span>QUICK TO PLAY</span>
+          <span>BUILT TO SHARE</span>
+        </div>
+        <button type="button" className="wb-btn wb-btn-primary" onClick={onBack}>Explore games</button>
       </div>
     </section>
   );

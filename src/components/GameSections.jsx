@@ -1,25 +1,43 @@
+import { useState } from 'react';
 import GameCard from './GameCard.jsx';
-import { Sparkle, Star, Scribble } from './Doodles.jsx';
 
-export function SectionHeading({ kicker, title, accent = 'lime' }) {
+function ArrowIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+export function SectionHeading({ kicker, title, actionLabel, onAction }) {
   return (
     <div className="wb-section-head">
       <div>
         {kicker && <p className="wb-section-kicker">{kicker}</p>}
-        <h2 className="wb-section-title">
-          {title}
-          <Star className={`wb-section-star wb-section-star-${accent}`} size={20} />
-        </h2>
+        <h2 className="wb-section-title">{title}</h2>
       </div>
-      <Scribble className="wb-section-scribble" />
+      {onAction && (
+        <button type="button" className="wb-section-action" onClick={onAction}>
+          {actionLabel || 'View all'}
+          <ArrowIcon />
+        </button>
+      )}
     </div>
   );
 }
 
-export function CategoryChips({ categories, selected, onSelect }) {
+export function CategoryChips({ categories, selected, onSelect, maxVisible = 0 }) {
+  const [expanded, setExpanded] = useState(false);
+  let visible = categories;
+  if (maxVisible > 0 && !expanded && categories.length > maxVisible) {
+    visible = categories.slice(0, maxVisible);
+    if (!visible.includes(selected)) visible = [selected, ...visible.slice(0, maxVisible - 1)];
+  }
+  const hiddenCount = categories.length - visible.length;
+
   return (
     <div className="wb-chips" role="group" aria-label="Filter games by category">
-      {categories.map((category) => (
+      {visible.map((category) => (
         <button
           key={category}
           type="button"
@@ -30,6 +48,16 @@ export function CategoryChips({ categories, selected, onSelect }) {
           {category}
         </button>
       ))}
+      {hiddenCount > 0 && (
+        <button type="button" className="wb-chip wb-chip-more" onClick={() => setExpanded(true)}>
+          +{hiddenCount} more
+        </button>
+      )}
+      {expanded && maxVisible > 0 && (
+        <button type="button" className="wb-chip wb-chip-more" onClick={() => setExpanded(false)}>
+          Show less
+        </button>
+      )}
     </div>
   );
 }
@@ -62,6 +90,7 @@ export function FeaturedRow({ games, favorites, onFavorite, onOpen, isPlayable }
           favorite={favorites.includes(game.id)}
           onFavorite={onFavorite}
           onOpen={onOpen}
+          featured
         />
       ))}
     </div>
@@ -71,12 +100,14 @@ export function FeaturedRow({ games, favorites, onFavorite, onOpen, isPlayable }
 export function EmptyState({ title, description, onReset }) {
   return (
     <div className="wb-empty">
-      <Sparkle size={30} />
-      <h3>{title}</h3>
-      <p>{description}</p>
+      <span className="wb-empty-icon" aria-hidden="true">⌕</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
       {onReset && (
         <button type="button" className="wb-btn wb-btn-secondary" onClick={onReset}>
-          Browse all games
+          Browse games
         </button>
       )}
     </div>

@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { findGame, games, isPlayable, listCategories } from './games/registry.js';
-import GameHost from './sdk/GameHost.jsx';
+import GameStage from './components/GameStage.jsx';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Hero from './components/Hero.jsx';
-import GameArt from './components/GameArt.jsx';
 import {
   SectionHeading,
   CategoryChips,
@@ -18,12 +17,34 @@ import { CreatePage, AboutPage } from './components/InfoPages.jsx';
 const categories = ['All games', ...listCategories()];
 const sidebarCategories = categories.slice(1);
 
+const FAVORITES_KEY = 'whitebox:favorites';
+const RECENT_KEY = 'whitebox:recent';
+const MAX_RECENT = 8;
+
+function readList(key) {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key));
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeList(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage can be unavailable (private mode, blocked cookies). The list then
+    // simply resets on reload instead of throwing.
+  }
+}
+
 export default function App() {
   const [section, setSection] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('All games');
   const [search, setSearch] = useState('');
-  const [favorites, setFavorites] = useState([]);
-  const [recentGames, setRecentGames] = useState([]);
+  const [favorites, setFavorites] = useState(() => readList(FAVORITES_KEY));
+  const [recentGames, setRecentGames] = useState(() => readList(RECENT_KEY).slice(0, MAX_RECENT));
   const [currentView, setCurrentView] = useState('browse');
 
   const activeGame = findGame(currentView);
@@ -47,6 +68,28 @@ export default function App() {
     .map((id) => findGame(id))
     .filter((game) => game !== undefined), [recentGames]);
 
+  // Jump back to the top whenever the player moves to a different view, otherwise
+  // opening a game from the middle of a long grid lands them mid-page.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }, [currentView, section]);
+
+  // Reflect the current view in the tab title and document heading.
+  useEffect(() => {
+    document.title = canPlay
+      ? `${activeGame.title} — WhiteBox`
+      : query
+        ? `Search: ${search.trim()} — WhiteBox`
+        : 'WhiteBox — Discover Your Next Favorite Game';
+  }, [canPlay, activeGame, query, search]);
+  const featuredGames = useMemo(() => {
+    const ids = ['orb-arena-mp', 'reaction-test', 'orb-dash-2d'];
+    return ids.map((id) => findGame(id)).filter(Boolean);
+  }, []);
+  const competitiveGames = useMemo(() => games.filter((game) =>
+    game.categories.includes('Multiplayer') || ['1v1', 'Party', 'Ranked'].includes(game.mode),
+  ).slice(0, 4), []);
+
   function goHome() {
     setCurrentView('browse');
     setSection('home');
@@ -68,23 +111,33 @@ export default function App() {
 
   function openGame(gameId) {
     if (!isPlayable(findGame(gameId))) return;
-    setRecentGames((current) => [gameId, ...current.filter((id) => id !== gameId)]);
+    setRecentGames((current) => {
+      const next = [gameId, ...current.filter((id) => id !== gameId)].slice(0, MAX_RECENT);
+      writeList(RECENT_KEY, next);
+      return next;
+    });
     setCurrentView(gameId);
   }
 
   function toggleFavorite(gameId) {
-    setFavorites((current) =>
-      current.includes(gameId)
+    setFavorites((current) => {
+      const next = current.includes(gameId)
         ? current.filter((id) => id !== gameId)
-        : [...current, gameId],
-    );
+        : [...current, gameId];
+      writeList(FAVORITES_KEY, next);
+      return next;
+    });
   }
 
   function searchGames(nextQuery) {
     setSearch(nextQuery);
+    // Leaving the query empty should return to where the player was, not strand
+    // them on a stale results view.
     if (nextQuery.trim()) {
       setCurrentView('browse');
       setSection('explore');
+    } else if (section === 'explore') {
+      setSection('home');
     }
   }
 
@@ -101,16 +154,23 @@ export default function App() {
         <Hero onExplore={() => navigate('explore')} onCreate={() => setCurrentView('create')} />
 
         <section className="wb-section">
-          <SectionHeading kicker="hand picked" title="Featured Games" />
-          <FeaturedRow games={games} {...cardProps} />
+          <SectionHeading kicker="START HERE" title="Featured games" actionLabel="View library" onAction={() => navigate('explore')} />
+          <FeaturedRow games={featuredGames} {...cardProps} />
         </section>
 
         <section className="wb-section">
-          <SectionHeading kicker="dig around" title="Explore Games" accent="ink" />
-          <CategoryChips categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
-          {categoryGames.length > 0
-            ? <GameGrid games={categoryGames} {...cardProps} />
-            : <EmptyState title="No games here just yet" description="Try another category." onReset={() => setSelectedCategory('All games')} />}
+          <SectionHeading kicker="PLAY WITH OTHERS" title="Competitive rooms" actionLabel="See all" onAction={() => navigateCategory('Multiplayer')} />
+          <GameGrid games={competitiveGames} {...cardProps} />
+        </section>
+
+        <section className="wb-browse-cta">
+          <div>
+            <h2>Browse the full library</h2>
+            <p>{games.length} games, live or on the way.</p>
+          </div>
+          <button type="button" className="wb-btn wb-btn-secondary" onClick={() => navigate('explore')}>
+            Browse all games
+          </button>
         </section>
       </>
     );
@@ -137,8 +197,8 @@ export default function App() {
       case 'explore':
         return (
           <section className="wb-section">
-            <SectionHeading kicker="the whole library" title="Explore Games" />
-            <CategoryChips categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+            <SectionHeading kicker="THE WHOLE LIBRARY" title="Explore games" />
+            <CategoryChips categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} maxVisible={12} />
             <GameGrid games={categoryGames} {...cardProps} />
           </section>
         );
@@ -159,6 +219,8 @@ export default function App() {
         search={search}
         onSearch={searchGames}
         onNavigate={goHome}
+        onExplore={() => navigate('explore')}
+        activeView={canPlay ? null : section}
         onOpenCreate={() => setCurrentView('create')}
       />
 
@@ -175,18 +237,13 @@ export default function App() {
 
         <main className="wb-main">
           {canPlay ? (
-            <section className="wb-game-stage">
-              <button type="button" className="wb-back" onClick={goHome}>← back to the box</button>
-              <div className="wb-game-head">
-                <GameArt type={activeGame.type} />
-                <div className="wb-game-head-copy">
-                  <p className="wb-section-kicker">now playing</p>
-                  <h1>{activeGame.title}</h1>
-                  <p>{activeGame.description}</p>
-                </div>
-              </div>
-              <GameHost manifest={activeGame} onExit={goHome} />
-            </section>
+            <GameStage
+              key={activeGame.id}
+              game={activeGame}
+              favorite={favorites.includes(activeGame.id)}
+              onFavorite={toggleFavorite}
+              onExit={goHome}
+            />
           ) : currentView === 'create' ? (
             <CreatePage onBack={goHome} />
           ) : currentView === 'about' ? (
@@ -199,8 +256,8 @@ export default function App() {
 
       <footer className="wb-footer">
         <span className="wb-footer-brand">WhiteBox</span>
-        <span>quick games · curious minds · welcome in</span>
-        <span className="wb-footer-note">player accounts & more games in development</span>
+        <span>Browser games, shared instantly.</span>
+        <span className="wb-footer-note">New rooms and creator tools in development.</span>
       </footer>
     </div>
   );

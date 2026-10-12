@@ -8,16 +8,29 @@
 // This module is lazy-loaded by GameHost, so three / fiber / drei / rapier stay
 // out of the main bundle until an r3f game is opened.
 
-import { Suspense } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { Stars } from '@react-three/drei';
+
+// Mounted inside <Physics>, so it only runs once the Rapier WASM module has
+// resolved. Flipping this is what hides the loading overlay.
+function PhysicsReady({ onReady }) {
+  useEffect(() => { onReady(); }, [onReady]);
+  return null;
+}
 
 export default function ThreeAdapter({ manifest, ctx, Game }) {
   const cfg = manifest.config?.three || {};
   const camera = cfg.camera || { position: [0, 6, 11], fov: 55 };
   const gravity = cfg.gravity || [0, -22, 0];
   const background = cfg.background || '#0b0e1a';
+
+  // <Physics> suspends while the Rapier WASM module initialises. Without a
+  // visible state for that window, a slow or blocked WASM load left players
+  // staring at an empty canvas with no feedback at all.
+  const [physicsReady, setPhysicsReady] = useState(false);
+  const markPhysicsReady = useCallback(() => setPhysicsReady(true), []);
 
   return (
     <div
@@ -27,9 +40,9 @@ export default function ThreeAdapter({ manifest, ctx, Game }) {
         width: '100%',
         height: 'min(72vh, 620px)',
         minHeight: '340px',
-        borderRadius: '16px',
+        borderRadius: '0',
         overflow: 'hidden',
-        border: '2px solid var(--ink)',
+        border: '0',
         background,
       }}
     >
@@ -53,10 +66,19 @@ export default function ThreeAdapter({ manifest, ctx, Game }) {
 
         <Physics gravity={gravity} timeStep="vary">
           <Suspense fallback={null}>
+            <PhysicsReady onReady={markPhysicsReady} />
             <Game ctx={ctx} />
           </Suspense>
         </Physics>
       </Canvas>
+
+      {!physicsReady && (
+        <div className="wb-engine-loading" role="status" aria-live="polite">
+          <div className="wb-host-spinner" aria-hidden="true" />
+          <p className="wb-host-kicker">LOADING ROOM</p>
+          <div className="wb-host-title">Starting physics engine…</div>
+        </div>
+      )}
     </div>
   );
 }

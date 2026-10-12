@@ -2,12 +2,12 @@
    platform theme). Scoped under .oamp-* so it can never leak into other games. */
 
 .oamp-lobby {
-  position: fixed;
+  position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(120% 120% at 50% 0%, rgba(20, 34, 78, 0.55), rgba(4, 7, 18, 0.9));
+  background: #0d1226;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #e8f0ff;
   pointer-events: auto;
@@ -36,7 +36,7 @@
   font-size: 28px;
   line-height: 1.05;
   font-weight: 800;
-  color: #ffffff;
+  color: #fff;
 }
 
 .oamp-sub {
@@ -109,14 +109,14 @@
 
 .oamp-btn-primary {
   width: 100%;
-  background: linear-gradient(180deg, #35e0ff, #12a6d6);
-  border-color: #6ff0ff;
+  background: #4ff3ff;
+  border-color: #4ff3ff;
   color: #04121a;
   font-weight: 800;
 }
 
 .oamp-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #6ff0ff, #16b6e6);
+  background: #7df9ff;
 }
 
 .oamp-btn-small { padding: 7px 12px; font-size: 12.5px; }
@@ -187,7 +187,7 @@
 
 /* --- HUD --- */
 .oamp-hud {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -343,8 +343,8 @@
   transform: translateX(-50%);
   padding: 9px 15px;
   border-radius: 10px;
-  background: rgba(255, 90, 90, 0.14);
-  border: 1px solid rgba(255, 120, 120, 0.42);
+  background: rgba(120, 120, 120, 0.14);
+  border: 1px solid rgba(120, 170, 255, 0.42);
   color: #ffc9c9;
   font-size: 12.5px;
   max-width: 80vw;

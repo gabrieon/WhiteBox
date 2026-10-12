@@ -54,6 +54,22 @@ function VisualArt() {
   );
 }
 
+function IconArt({ bg = 'var(--paper)', icon = '?', accent = 'var(--lime)' }) {
+  return (
+    <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
+      <rect width="160" height="120" fill={bg} />
+      <path d="M18 24h124M18 94h124" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeDasharray="6 8" opacity="0.45" />
+      <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
+        <rect x="34" y="24" width="92" height="72" rx="16" fill="var(--white)" transform="rotate(-3 80 60)" />
+        <circle cx="118" cy="32" r="17" fill={accent} />
+      </g>
+      <text x="80" y="72" textAnchor="middle" fontFamily="var(--font-display)" fontSize="38" fill="var(--ink)">{icon}</text>
+      <circle cx="44" cy="84" r="5" fill={accent} stroke="var(--ink)" strokeWidth="2" />
+      <circle cx="118" cy="84" r="5" fill="var(--ink)" />
+    </svg>
+  );
+}
+
 // 3D arena (single-player Orb Arena): neon orb over a perspective grid floor.
 function ArenaArt() {
   return (
@@ -135,6 +151,20 @@ const artByType = {
   reaction: ReactionArt,
   country: CountryArt,
   visual: VisualArt,
+  test: () => <IconArt bg="var(--pink)" icon="✓" accent="var(--lime)" />,
+  puzzle: () => <IconArt bg="var(--lavender)" icon="#" accent="var(--sky)" />,
+  language: () => <IconArt bg="var(--mint)" icon="あ" accent="var(--pink)" />,
+  audio: () => <IconArt bg="var(--sky)" icon="♫" accent="var(--lime)" />,
+  ai: () => <IconArt bg="var(--lavender)" icon="AI" accent="var(--coral)" />,
+  map: () => <IconArt bg="var(--sky)" icon="⌖" accent="var(--lime)" />,
+  strategy: () => <IconArt bg="var(--paper)" icon="♞" accent="var(--lavender)" />,
+  brand: () => <IconArt bg="var(--coral)" icon="B" accent="var(--white)" />,
+  drawing: () => <IconArt bg="var(--pink)" icon="✎" accent="var(--mint)" />,
+  flag: () => <IconArt bg="var(--mint)" icon="⚑" accent="var(--coral)" />,
+  typing: () => <IconArt bg="var(--paper)" icon="W" accent="var(--lime)" />,
+  memory: () => <IconArt bg="var(--lavender)" icon="▦" accent="var(--pink)" />,
+  versus: () => <IconArt bg="var(--lime)" icon="VS" accent="var(--white)" />,
+  word: () => <IconArt bg="var(--mint)" icon="R" accent="var(--sky)" />,
   arena: ArenaArt,
   'arena-online': ArenaOnlineArt,
   '2d': TwoDArt,
