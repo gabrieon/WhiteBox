@@ -1,4 +1,4 @@
-/* Orb Arena Online — stark black/white/red identity, scoped under .oamp-* so it
+/* Orb Arena Online — light black/white/red identity, scoped under .oamp-* so it
    can never leak into the platform UI or other games. */
 
 .oamp-lobby {
@@ -7,16 +7,16 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #000000;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #ffffff;
+  background: var(--paper);
+  font-family: var(--font-body);
+  color: var(--ink);
   pointer-events: auto;
 }
 
 .oamp-lobby-card {
   width: min(460px, 100%);
-  background: #000000;
-  border: 1px solid #333333;
+  background: var(--paper);
+  border: 1px solid var(--line);
   padding: 26px 24px;
   text-align: left;
 }
@@ -26,7 +26,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #ff2222;
+  color: var(--red);
 }
 
 .oamp-title {
@@ -34,14 +34,14 @@
   font-size: 28px;
   line-height: 1.05;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--ink);
 }
 
 .oamp-sub {
   margin: 0 0 18px;
   font-size: 13.5px;
   line-height: 1.5;
-  color: #888888;
+  color: var(--muted);
 }
 
 .oamp-field {
@@ -54,7 +54,7 @@
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #666666;
+  color: var(--muted);
   margin-bottom: 6px;
 }
 
@@ -62,16 +62,16 @@
   width: 100%;
   box-sizing: border-box;
   padding: 11px 13px;
-  border: 1px solid #333333;
-  background: #000000;
-  color: #ffffff;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
   font-size: 14px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .oamp-input:focus {
-  border-color: #ff2222;
+  border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(255, 34, 34, 0.18);
 }
 
@@ -86,8 +86,8 @@
 .oamp-btn {
   appearance: none;
   border: 0;
-  background: #ff2222;
-  color: #ffffff;
+  background: var(--red);
+  color: var(--paper);
   padding: 11px 16px;
   font-size: 14px;
   font-weight: 700;
@@ -96,7 +96,7 @@
 }
 
 .oamp-btn:hover:not(:disabled) {
-  background: #ff4444;
+  background: var(--red-hover);
 }
 
 .oamp-btn:active:not(:disabled) { transform: translateY(1px); }
@@ -104,13 +104,13 @@
 
 .oamp-btn-primary {
   width: 100%;
-  background: #ff2222;
-  color: #ffffff;
+  background: var(--red);
+  color: var(--paper);
   font-weight: 800;
 }
 
 .oamp-btn-primary:hover:not(:disabled) {
-  background: #ff4444;
+  background: var(--red-hover);
 }
 
 .oamp-btn-small { padding: 7px 12px; font-size: 12.5px; }
@@ -120,7 +120,7 @@
   align-items: center;
   gap: 10px;
   margin: 16px 0;
-  color: #555555;
+  color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -131,7 +131,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: #222222;
+  background: var(--line);
 }
 
 .oamp-joinrow {
@@ -143,9 +143,9 @@
 .oamp-error {
   margin: 14px 0 0;
   padding: 10px 12px;
-  border: 1px solid #552222;
-  background: #1a0000;
-  color: #ff6666;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--red);
   font-size: 12.5px;
   line-height: 1.45;
 }
@@ -154,14 +154,14 @@
   margin: 16px 0 0;
   font-size: 11.5px;
   line-height: 1.5;
-  color: #555555;
+  color: var(--muted);
 }
 
 .oamp-note code {
-  background: #111111;
+  background: var(--surface);
   padding: 1px 5px;
   border-radius: 5px;
-  color: #aaaaaa;
+  color: var(--ink);
   font-size: 11px;
 }
 
@@ -169,14 +169,14 @@
   margin-top: 16px;
   background: none;
   border: none;
-  color: #555555;
+  color: var(--muted);
   cursor: pointer;
   font-size: 12.5px;
   padding: 0;
   text-decoration: underline;
 }
 
-.oamp-link:hover { color: #aaaaaa; }
+.oamp-link:hover { color: var(--ink); }
 
 /* --- HUD --- */
 
@@ -184,8 +184,8 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #ffffff;
+  font-family: var(--font-body);
+  color: var(--ink);
 }
 
 .oamp-hud-top {
@@ -204,57 +204,57 @@
   align-items: center;
   gap: 8px;
   padding: 7px 10px 7px 12px;
-  background: rgba(0, 0, 0, 0.82);
-  border: 1px solid #333333;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
 }
 
 .oamp-room-label {
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: #666666;
+  color: var(--muted);
 }
 
 .oamp-room-code {
   font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.22em;
-  color: #ff2222;
+  color: var(--red);
 }
 
 .oamp-copy {
   pointer-events: auto;
-  background: #111111;
-  border: 1px solid #333333;
-  color: #aaaaaa;
+  background: var(--ink);
+  border: 0;
+  color: var(--paper);
   font-size: 11px;
   padding: 3px 8px;
   cursor: pointer;
 }
 
-.oamp-copy:hover { border-color: #ff2222; color: #ffffff; }
+.oamp-copy:hover { background: #333333; }
 
 .oamp-chip {
   display: inline-flex;
   align-items: baseline;
   gap: 7px;
   padding: 8px 13px;
-  background: rgba(0, 0, 0, 0.82);
-  border: 1px solid #333333;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
 }
 
 .oamp-chip-label {
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: #666666;
+  color: var(--muted);
 }
 
 .oamp-chip-value {
   font-size: 18px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--ink);
 }
 
-.oamp-chip-value em { font-size: 12px; font-style: normal; color: #666666; }
+.oamp-chip-value em { font-size: 12px; font-style: normal; color: var(--muted); }
 
 .oamp-pill {
   display: inline-flex;
@@ -263,8 +263,8 @@
   padding: 8px 13px;
   font-size: 12px;
   font-weight: 700;
-  background: rgba(0, 0, 0, 0.82);
-  border: 1px solid #333333;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
   text-transform: capitalize;
 }
 
@@ -272,11 +272,11 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #666666;
+  background: var(--muted);
 }
 
-.oamp-pill.is-online .oamp-dot { background: #ff2222; box-shadow: 0 0 8px #ff2222; }
-.oamp-pill.is-offline .oamp-dot { background: #333333; box-shadow: 0 0 8px #333333; }
+.oamp-pill.is-online .oamp-dot { background: var(--red); box-shadow: none; }
+.oamp-pill.is-offline .oamp-dot { background: var(--muted); box-shadow: none; }
 
 .oamp-hud .oamp-btn { pointer-events: auto; margin-left: auto; }
 
@@ -286,15 +286,15 @@
   right: 14px;
   width: 210px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.82);
-  border: 1px solid #333333;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--line);
 }
 
 .oamp-board-title {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #666666;
+  color: var(--muted);
   margin-bottom: 8px;
 }
 
@@ -313,14 +313,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #aaaaaa;
+  color: var(--ink);
 }
 
-.oamp-board-row.is-you .oamp-board-name { color: #ff4444; font-weight: 700; }
+.oamp-board-row.is-you .oamp-board-name { color: var(--red); font-weight: 700; }
 
 .oamp-board-score {
   font-weight: 800;
-  color: #ff2222;
+  color: var(--red);
   font-variant-numeric: tabular-nums;
 }
 
@@ -330,9 +330,9 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 9px 15px;
-  border: 1px solid #552222;
-  background: #1a0000;
-  color: #ff6666;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--red);
   font-size: 12.5px;
   max-width: 80vw;
   text-align: center;
@@ -344,15 +344,15 @@
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 16px 22px;
-  background: #000000;
-  border: 1px solid #333333;
-  color: #ffffff;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--ink);
   font-size: 14px;
   text-align: center;
   max-width: 80vw;
 }
 
-.oamp-clear strong { color: #ff2222; }
+.oamp-clear strong { color: var(--red); }
 
 .oamp-hint {
   position: absolute;
@@ -360,8 +360,8 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: 12px;
-  color: #666666;
-  background: rgba(0, 0, 0, 0.6);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.6);
   padding: 6px 12px;
   white-space: nowrap;
 }
@@ -370,20 +370,20 @@
 
 .oamp-nametag {
   padding: 2px 8px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #333333;
-  color: #aaaaaa;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--line);
+  color: var(--ink);
   font-size: 12px;
   font-weight: 700;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   white-space: nowrap;
   transform: translateY(-4px);
 }
 
 .oamp-nametag-you {
   background: rgba(255, 34, 34, 0.16);
-  border-color: #ff2222;
-  color: #ff4444;
+  border-color: var(--red);
+  color: var(--red);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 11px;

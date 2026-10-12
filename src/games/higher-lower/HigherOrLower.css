@@ -1,4 +1,4 @@
-/* Higher or Lower — stark black/white/red duel identity, scoped to .hl-*. */
+/* Higher or Lower — light black/white/red duel identity, scoped to .hl-*. */
 
 .hl {
   width: 100%;
@@ -8,22 +8,22 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: #ffffff;
+  font-family: var(--font-body);
+  color: var(--ink);
 }
 
 /* --- menu --- */
 
 .hl-menu {
   padding: clamp(22px, 4vw, 36px);
-  background: #000000;
+  background: var(--paper);
 }
 
 .hl-kicker {
   margin: 0 0 8px;
   font-size: 10px;
   letter-spacing: 0.2em;
-  color: #ff2222;
+  color: var(--red);
 }
 
 .hl-title {
@@ -31,7 +31,7 @@
   font-size: clamp(30px, 5vw, 44px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: var(--ink);
 }
 
 .hl-lede {
@@ -39,7 +39,7 @@
   max-width: 56ch;
   font-size: 14px;
   line-height: 1.6;
-  color: #888888;
+  color: var(--muted);
 }
 
 .hl-menu-actions {
@@ -53,7 +53,7 @@
   align-items: center;
   gap: 12px;
   margin: 22px 0 16px;
-  color: #555555;
+  color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -64,7 +64,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #222222;
+  background: var(--line);
 }
 
 .hl-duel {
@@ -83,15 +83,15 @@
 .hl-input {
   min-height: 40px;
   padding: 0 12px;
-  border: 1px solid #333333;
-  background: #000000;
-  color: #ffffff;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
   font-size: 14px;
   outline: none;
 }
 
 .hl-input:focus {
-  border-color: #888888;
+  border-color: var(--red);
 }
 
 .hl-input-code {
@@ -105,7 +105,7 @@
 .hl-note {
   margin: 14px 0 0;
   font-size: 12.5px;
-  color: #ff4444;
+  color: var(--red);
 }
 
 /* --- buttons --- */
@@ -115,15 +115,15 @@
   min-height: 42px;
   padding: 0 18px;
   border: 0;
-  background: #ff2222;
-  color: #ffffff;
+  background: var(--red);
+  color: var(--paper);
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.04em;
   transition: background 0.15s ease, opacity 0.15s ease;
 }
 
-.hl-btn:hover:not(:disabled) { background: #ff4444; }
+.hl-btn:hover:not(:disabled) { background: var(--red-hover); }
 .hl-btn:active:not(:disabled) { transform: translateY(1px); }
 
 .hl-btn:disabled {
@@ -140,28 +140,28 @@
 }
 
 .hl-btn-higher {
-  background: #ff2222;
-  color: #ffffff;
+  background: var(--red);
+  color: var(--paper);
 }
 
-.hl-btn-higher:hover:not(:disabled) { background: #ff4444; }
+.hl-btn-higher:hover:not(:disabled) { background: var(--red-hover); }
 
 .hl-btn-lower {
-  background: #ffffff;
-  color: #000000;
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.hl-btn-lower:hover:not(:disabled) { background: #dddddd; }
+.hl-btn-lower:hover:not(:disabled) { background: #333333; }
 
 .hl-btn-ghost {
   background: transparent;
-  color: #888888;
+  color: var(--muted);
   align-self: center;
 }
 
 .hl-btn-ghost:hover:not(:disabled) {
-  background: #111111;
-  color: #ffffff;
+  background: transparent;
+  color: var(--ink);
 }
 
 /* --- scoreboard --- */
@@ -179,20 +179,20 @@
   gap: 2px;
   min-width: 150px;
   padding: 12px 18px;
-  background: #000000;
-  border: 1px solid #333333;
+  background: var(--paper);
+  border: 1px solid var(--line);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .hl-score.is-active {
-  border-color: #ff2222;
-  box-shadow: 0 0 22px rgba(255, 34, 34, 0.2);
+  border-color: var(--red);
+  box-shadow: none;
 }
 
 .hl-score-label {
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: #888888;
+  color: var(--muted);
   text-transform: uppercase;
 }
 
@@ -200,14 +200,14 @@
   font-size: 30px;
   font-weight: 800;
   line-height: 1;
-  color: #ffffff;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
 .hl-score-keys {
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: #555555;
+  color: var(--muted);
   text-transform: uppercase;
 }
 
@@ -216,14 +216,14 @@
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #666666;
+  color: var(--muted);
 }
 
 /* --- lobby --- */
 
 .hl-lobby {
   padding: 30px 24px;
-  background: #000000;
+  background: var(--paper);
   text-align: center;
 }
 
@@ -231,13 +231,13 @@
   margin: 0 0 6px;
   font-size: 22px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--ink);
 }
 
 .hl-lobby-sub {
   margin: 0 0 16px;
   font-size: 13px;
-  color: #888888;
+  color: var(--muted);
 }
 
 .hl-room {
@@ -247,40 +247,40 @@
   margin: 0 auto 20px;
   padding: 18px;
   max-width: 320px;
-  border: 1px solid #333333;
-  background: #000000;
+  border: 1px solid var(--line);
+  background: var(--paper);
 }
 
 .hl-room-label {
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: #666666;
+  color: var(--muted);
 }
 
 .hl-room-code {
   font-size: 32px;
   font-weight: 800;
   letter-spacing: 0.3em;
-  color: #ff2222;
+  color: var(--red);
   text-indent: 0.3em;
 }
 
 .hl-copy {
   margin-top: 4px;
   padding: 5px 10px;
-  border: 1px solid #333333;
+  border: 1px solid var(--line);
   background: transparent;
-  color: #888888;
+  color: var(--muted);
   font-size: 11px;
   cursor: pointer;
 }
 
-.hl-copy:hover { border-color: #ff2222; color: #ffffff; }
+.hl-copy:hover { border-color: var(--red); color: var(--ink); }
 
 .hl-room-hint {
   margin: 4px 0 0;
   font-size: 11px;
-  color: #555555;
+  color: var(--muted);
 }
 
 /* --- play stage --- */
@@ -299,8 +299,8 @@
   gap: 10px;
   justify-items: center;
   padding: 32px 24px;
-  background: #000000;
-  border: 1px solid #333333;
+  border: 1px solid var(--line);
+  background: var(--paper);
   text-align: center;
 }
 
@@ -308,14 +308,14 @@
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #888888;
+  color: var(--muted);
 }
 
 .hl-card-value {
   font-size: clamp(30px, 6vw, 48px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: var(--ink);
   word-break: break-word;
 }
 
@@ -324,26 +324,26 @@
   gap: 3px;
   justify-items: center;
   padding: 10px 18px;
-  background: #000000;
-  border: 1px solid #333333;
+  border: 1px solid var(--line);
+  background: var(--paper);
 }
 
 .hl-reveal.is-correct {
-  border-color: #ff2222;
+  border-color: var(--red);
 }
 
 .hl-reveal-text {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #888888;
+  color: var(--muted);
 }
 
-.hl-reveal.is-correct .hl-reveal-text { color: #ff2222; }
+.hl-reveal.is-correct .hl-reveal-text { color: var(--red); }
 
 .hl-reveal-card {
   font-size: 12px;
-  color: #aaaaaa;
+  color: var(--ink);
 }
 
 .hl-guess {
@@ -356,7 +356,7 @@
 .hl-status {
   margin: 0;
   font-size: 13px;
-  color: #888888;
+  color: var(--muted);
   text-align: center;
   min-height: 18px;
 }

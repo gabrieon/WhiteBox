@@ -2,7 +2,7 @@ function CreatorBox() {
   return (
     <svg className="wb-create-art" viewBox="0 0 220 180" role="img" aria-label="An abstract game room illustration">
       <rect x="20" y="22" width="180" height="136" rx="20" fill="#2b2b2b" stroke="var(--line)" strokeWidth="2" />
-      <rect x="39" y="43" width="142" height="20" rx="7" fill="var(--surface-raised)" />
+      <rect x="39" y="43" width="142" height="20" rx="7" fill="var(--line)" />
       <circle cx="53" cy="53" r="4" fill="var(--coral)" />
       <circle cx="66" cy="53" r="4" fill="var(--lime)" />
       <rect x="39" y="76" width="68" height="62" rx="11" fill="var(--lavender)" opacity="0.92" />

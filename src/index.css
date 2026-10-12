@@ -1,14 +1,16 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Stark black/white/red palette. No greys, no colors except red accent. */
-  --paper: #000000;
-  --ink: #ffffff;
-  --muted: #888888;
+  /* Warm off-white palette with black text. Stark, minimal, easy on eyes. */
+  --paper: #f5f5f0;
+  --ink: #1a1a1a;
+  --muted: #666666;
   --red: #ff2222;
   --red-hover: #ff4444;
   --red-pressed: #dd1111;
-  --line: #333333;
+  --on-red: #ffffff;
+  --line: #e0e0e0;
+  --surface: #fafaf7;
 
   --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -54,5 +56,5 @@ input:focus-visible {
 
 ::selection {
   background: var(--red);
-  color: var(--ink);
+  color: #ffffff;
 }

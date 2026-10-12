@@ -1,13 +1,13 @@
-/* GameHost — the inner game viewport. Stark black/white/red styling so loading
+/* GameHost — the inner game viewport. Light black/white/red styling so loading
    and error states feel like part of the game. Scoped to .wb-host. */
 
 .wb-host {
   position: relative;
   width: 100%;
   min-height: 100%;
-  background: #000000;
-  color: #ffffff;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
 }
 
 .wb-host .wb-three-host,
@@ -16,12 +16,6 @@
   border-radius: 0 !important;
 }
 
-/* R3F measures its container on mount and re-measures via ResizeObserver. Two
-   problems showed up in practice: the first measurement can stick at the
-   300x150 canvas default, and percentage heights never resolve because the
-   ancestor chain is sized with min-height rather than height. Giving the
-   container a definite height plus forcing the canvas to fill it makes the
-   drawing surface correct regardless of measurement timing. */
 .wb-host .wb-three-host {
   width: 100% !important;
   height: 520px !important;
@@ -48,8 +42,6 @@
   display: block;
 }
 
-/* Overlay shown while <Physics> resolves the Rapier WASM module. It is plain
-   DOM over the canvas, because the Canvas subtree is exactly what is waiting. */
 .wb-engine-loading {
   position: absolute;
   z-index: 5;
@@ -59,8 +51,8 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: #000000;
-  color: #ffffff;
+  background: var(--paper);
+  color: var(--ink);
   text-align: center;
 }
 
@@ -73,20 +65,16 @@
   height: 100%;
   min-height: 520px;
   padding: 48px 28px;
-  background: #000000;
-  color: #ffffff;
+  background: var(--paper);
+  color: var(--ink);
   text-align: center;
-}
-
-.wb-host-overlay.is-error {
-  background: #000000;
 }
 
 .wb-host-orb {
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: #ff2222;
+  background: var(--red);
   animation: wb-host-float 2.2s ease-in-out infinite;
 }
 
@@ -94,8 +82,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 3px solid #333333;
-  border-top-color: #ffffff;
+  border: 3px solid var(--line);
+  border-top-color: var(--ink);
   animation: wb-host-spin 0.9s linear infinite;
 }
 
@@ -110,7 +98,7 @@
 
 .wb-host-kicker {
   margin: 0;
-  color: #888888;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -118,8 +106,8 @@
 
 .wb-host-title {
   margin: 0;
-  color: #ffffff;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  font-family: var(--font-display);
   font-size: 21px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -128,7 +116,7 @@
 .wb-host-msg {
   max-width: 46ch;
   margin: 0;
-  color: #888888;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -137,14 +125,14 @@
   width: min(280px, 70%);
   height: 5px;
   overflow: hidden;
-  background: #222222;
+  background: var(--line);
 }
 
 .wb-host-loadbar i {
   display: block;
   width: 40%;
   height: 100%;
-  background: #ffffff;
+  background: var(--ink);
   animation: wb-host-slide 1.2s ease-in-out infinite;
 }
 
@@ -158,8 +146,8 @@
   min-height: 40px;
   padding: 0 18px;
   border: 0;
-  background: #ff2222;
-  color: #ffffff;
+  background: var(--red);
+  color: var(--on-red);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
@@ -167,7 +155,7 @@
 }
 
 .wb-host-btn:hover {
-  background: #ff4444;
+  background: var(--red-hover);
 }
 
 @media (max-width: 720px) {
