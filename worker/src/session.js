@@ -20,15 +20,18 @@ export function newSessionId() {
     .replace(/=+$/, '');
 }
 
-function cookieHeader(value, { maxAge, secure } = {}) {
+function cookieHeader(value, { maxAge } = {}) {
+  // SameSite=None + Secure, always. The frontend and the Worker are different
+  // origins in both environments (rarelyknown.in vs workers.dev in prod,
+  // localhost:5173 vs 127.0.0.1:8787 in dev), and SameSite=Lax cookies are
+  // NOT sent on cross-site fetch/WebSocket requests — login would silently
+  // never work. Secure is accepted on http://localhost (trustworthy context).
   const parts = [
     `${COOKIE_NAME}=${value}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax',
-    // Secure is required in production. Localhost http://dev is exempt by
-    // browsers, so we send it based on the request scheme rather than always.
-    `Secure=${secure ? 'true' : 'false'}`,
+    'SameSite=None',
+    'Secure',
   ];
   if (typeof maxAge === 'number') parts.push(`Max-Age=${maxAge}`);
   return parts.join('; ');
@@ -47,18 +50,19 @@ function parseCookies(request) {
   return out;
 }
 
+// The raw session id from the cookie, without a KV lookup. Used by the
+// multiplayer room to resolve the verified identity on WebSocket upgrade.
+export function readSessionId(request) {
+  const id = parseCookies(request)[COOKIE_NAME];
+  return typeof id === 'string' && id ? id : null;
+}
+
 export function sessionCookieHeader(request, sessionId) {
-  return cookieHeader(sessionId, {
-    maxAge: SESSION_TTL_SEC,
-    secure: new URL(request.url).protocol === 'https:',
-  });
+  return cookieHeader(sessionId, { maxAge: SESSION_TTL_SEC });
 }
 
 export function clearedSessionCookieHeader(request) {
-  return cookieHeader('', {
-    maxAge: 0,
-    secure: new URL(request.url).protocol === 'https:',
-  });
+  return cookieHeader('', { maxAge: 0 });
 }
 
 export async function createSession(env, profile) {

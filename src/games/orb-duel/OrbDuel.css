@@ -1,5 +1,4 @@
-/* Orb Duel HUD — local 1v1 neon identity, scoped to .od-* so it never leaks
-   into the platform UI or other games. */
+/* Orb Duel HUD — stark black/white/red. */
 
 .od-hud {
   position: absolute;
@@ -9,8 +8,8 @@
   align-items: center;
   padding: 14px 16px;
   gap: 12px;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #dff6ff;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #ffffff;
   pointer-events: none;
 }
 
@@ -26,23 +25,22 @@
   gap: 2px;
   min-width: 128px;
   padding: 10px 16px;
-  border-radius: 12px;
-  background: rgba(6, 12, 28, 0.78);
-  border: 1px solid rgba(79, 243, 255, 0.4);
+  background: rgba(0, 0, 0, 0.78);
+  border: 1px solid #333333;
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 .od-score-p1 {
-  border-color: rgba(217, 255, 67, 0.5);
+  border-color: #ff2222;
 }
 
 .od-score-p2 {
-  border-color: rgba(79, 243, 255, 0.5);
+  border-color: #444444;
 }
 
 .od-score.is-flash {
   transform: scale(1.07);
-  box-shadow: 0 0 24px rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 24px rgba(255, 34, 34, 0.28);
 }
 
 .od-score-name {
@@ -51,21 +49,21 @@
   color: #8fb6d6;
 }
 
-.od-score-p1 .od-score-name { color: #d9ff80; }
-.od-score-p2 .od-score-name { color: #7fe9f5; }
+.od-score-p1 .od-score-name { color: #ff4444; }
+.od-score-p2 .od-score-name { color: #aaaaaa; }
 
 .od-score-value {
   font-size: 34px;
   font-weight: 800;
   line-height: 1;
-  color: #eafeff;
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
 }
 
 .od-score-keys {
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: #5f7d96;
+  color: #777777;
   text-transform: uppercase;
 }
 
@@ -74,7 +72,7 @@
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6f93ad;
+  color: #888888;
 }
 
 .od-overlay {
@@ -82,17 +80,15 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(3, 7, 18, 0.72);
+  background: rgba(0, 0, 0, 0.72);
   pointer-events: auto;
 }
 
 .od-panel {
   text-align: center;
   padding: 26px 32px;
-  border-radius: 18px;
-  background: rgba(8, 16, 36, 0.94);
-  border: 1px solid rgba(79, 243, 255, 0.45);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.94);
+  border: 1px solid #333333;
   max-width: min(92%, 420px);
 }
 
@@ -101,24 +97,23 @@
   font-size: 30px;
   font-weight: 900;
   letter-spacing: 0.01em;
-  color: #eafeff;
-  text-shadow: 0 0 22px rgba(79, 243, 255, 0.45);
+  color: #ffffff;
 }
 
 .od-panel-sub {
   margin: 0 0 16px;
   font-size: 13px;
-  color: #7fd7e8;
+  color: #888888;
 }
 
 .od-panel-stat {
   margin: 6px 0 0;
   font-size: 22px;
-  color: #bfeefb;
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
 }
 
-.od-panel-stat strong { color: #4ff3ff; }
+.od-panel-stat strong { color: #ff2222; }
 
 .od-panel-keys {
   display: grid;
@@ -131,19 +126,17 @@
   display: grid;
   gap: 2px;
   padding: 9px 12px;
-  border-radius: 9px;
-  background: rgba(10, 20, 44, 0.7);
-  border: 1px solid rgba(79, 243, 255, 0.22);
+  border: 1px solid #222222;
 }
 
 .od-panel-keys strong {
   font-size: 12px;
-  color: #eafeff;
+  color: #ffffff;
 }
 
 .od-panel-keys span {
   font-size: 11.5px;
-  color: #8fb6d6;
+  color: #888888;
 }
 
 .od-panel-actions {
@@ -157,27 +150,26 @@
 .od-btn {
   pointer-events: auto;
   cursor: pointer;
-  padding: 10px 18px;
-  border-radius: 11px;
-  border: 1px solid rgba(79, 243, 255, 0.5);
-  background: rgba(10, 20, 44, 0.85);
-  color: #cdf6ff;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  background: #ff2222;
+  color: #ffffff;
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.04em;
   transition: background 0.15s ease, transform 0.05s ease;
 }
 
-.od-btn:hover { background: rgba(24, 44, 88, 0.95); }
+.od-btn:hover { background: #ff4444; }
 .od-btn:active { transform: translateY(1px); }
 
 .od-btn-primary {
-  background: #4ff3ff;
-  color: #04121a;
-  border-color: #4ff3ff;
+  background: #ff2222;
+  color: #ffffff;
 }
 
-.od-btn-primary:hover { background: #7df9ff; }
+.od-btn-primary:hover { background: #ff4444; }
 
 @media (max-width: 640px) {
   .od-score { min-width: 104px; padding: 8px 12px; }

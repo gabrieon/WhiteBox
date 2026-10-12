@@ -1,29 +1,18 @@
 :root {
   color-scheme: dark;
 
-  /* Flat grey platform palette. No gradients anywhere in the UI. */
-  --paper: #171717;
-  --paper-deep: #0f0f0f;
-  --surface: #1f1f1f;
-  --surface-raised: #262626;
-  --surface-hover: #2e2e2e;
-  --ink: #ececec;
-  --text: #161616;
-  --white: #f5f5f5;
-  --gray: #a3a3a3;
-  --muted: #737373;
-  --line: #383838;
-  --line-soft: #2a2a2a;
-  --lime: #d9d9d9;
-  --coral: #8c8c8c;
-  --mint: #b8b8b8;
-  --lavender: #a3a3a3;
-  --sky: #c9c9c9;
-  --pink: #999999;
+  /* Stark black/white/red palette. No greys, no colors except red accent. */
+  --paper: #000000;
+  --ink: #ffffff;
+  --muted: #888888;
+  --red: #ff2222;
+  --red-hover: #ff4444;
+  --red-pressed: #dd1111;
+  --line: #333333;
 
-  --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-hand: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-hand: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
   color: var(--ink);
   background: var(--paper);
@@ -40,7 +29,7 @@
 
 html {
   min-width: 320px;
-  background: var(--paper-deep);
+  background: var(--paper);
   scroll-behavior: smooth;
 }
 
@@ -59,11 +48,11 @@ input {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid rgba(220, 220, 220, 0.65);
-  outline-offset: 3px;
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.22);
-  color: var(--white);
+  background: var(--red);
+  color: var(--ink);
 }
