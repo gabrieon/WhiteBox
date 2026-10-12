@@ -27,10 +27,13 @@ export default function AccountMenu() {
   const buttonSlot = useRef(null);
   const rootRef = useRef(null);
 
-  // Mount Google's own button whenever we are in a signed-out, configured state.
+  // Mount Google's own button whenever we are signed out — or when the session
+  // check failed. A failed check usually means the API was unreachable for a
+  // moment (sleeping laptop, captive portal); the button must still appear so
+  // the player can retry, and a successful click re-verifies anyway.
   useEffect(() => {
     if (!buttonSlot.current || !configured) return undefined;
-    if (status !== AuthStatus.SIGNED_OUT) return undefined;
+    if (status !== AuthStatus.SIGNED_OUT && status !== AuthStatus.ERROR) return undefined;
 
     let cancelled = false;
     renderGoogleButton(buttonSlot.current, {
