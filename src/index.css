@@ -5,9 +5,10 @@
   --paper: #f5f5f0;
   --ink: #1a1a1a;
   --muted: #666666;
-  --red: #ff2222;
-  --red-hover: #ff4444;
-  --red-pressed: #dd1111;
+  /* Stark monochrome: near-black accents on warm off-white. */
+  --red: #111111;
+  --red-hover: #333333;
+  --red-pressed: #000000;
   --on-red: #ffffff;
   --line: #e0e0e0;
   --surface: #fafaf7;

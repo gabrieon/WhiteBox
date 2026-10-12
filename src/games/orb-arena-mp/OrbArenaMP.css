@@ -72,7 +72,7 @@
 
 .oamp-input:focus {
   border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(255, 34, 34, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.18);
 }
 
 .oamp-input-code {
@@ -307,7 +307,7 @@
   font-size: 13px;
 }
 
-.oamp-board-row.is-you { background: rgba(255, 34, 34, 0.12); }
+.oamp-board-row.is-you { background: rgba(0, 0, 0, 0.06); }
 
 .oamp-board-name {
   overflow: hidden;
@@ -381,7 +381,7 @@
 }
 
 .oamp-nametag-you {
-  background: rgba(255, 34, 34, 0.16);
+  background: rgba(0, 0, 0, 0.08);
   border-color: var(--red);
   color: var(--red);
   text-transform: uppercase;
