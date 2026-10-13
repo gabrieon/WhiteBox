@@ -57,21 +57,24 @@ const TRENDING_IDS = [
   'orb-arena',
 ];
 
-function GameRow({ title, list, onOpen }) {
-  if (list.length === 0) return null;
+function GameRow({ title, list, emptyHint, onOpen }) {
   return (
     <section className="wb-row">
       <h2 className="wb-row-title">{title}</h2>
-      <div className="wb-grid">
-        {list.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            playable={isPlayable(game)}
-            onOpen={onOpen}
-          />
-        ))}
-      </div>
+      {list.length === 0 ? (
+        <p className="wb-row-empty">{emptyHint}</p>
+      ) : (
+        <div className="wb-grid">
+          {list.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              playable={isPlayable(game)}
+              onOpen={onOpen}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -168,9 +171,9 @@ export default function App() {
         ) : (
           <>
             <h1 className="wb-site-title">WhiteBox</h1>
-            <GameRow title="Continue Playing" list={continuePlaying} onOpen={openGame} />
-            <GameRow title="Trending" list={trending} onOpen={openGame} />
-            <GameRow title="Top Played" list={topPlayed} onOpen={openGame} />
+            <GameRow title="Continue Playing" list={continuePlaying} emptyHint="Games you open will show up here." onOpen={openGame} />
+            <GameRow title="Trending" list={trending} emptyHint="" onOpen={openGame} />
+            <GameRow title="Top Played" list={topPlayed} emptyHint="Your most-played games will show up here." onOpen={openGame} />
           </>
         )}
       </main>

@@ -8,10 +8,10 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--paper);
+  background-color: #cfe6ff;
   background-image:
-    repeating-linear-gradient(0deg, transparent 0 26px, rgba(147, 197, 253, 0.45) 26px 28px),
-    repeating-linear-gradient(90deg, transparent 0 26px, rgba(249, 168, 212, 0.45) 26px 28px);
+    repeating-linear-gradient(0deg, transparent 0 28px, rgba(216, 167, 192, 0.55) 28px 30px),
+    repeating-linear-gradient(90deg, transparent 0 28px, rgba(216, 167, 192, 0.55) 28px 30px);
   color: var(--ink);
 }
 
@@ -64,6 +64,13 @@
   height: 12px;
   margin-right: 10px;
   background: var(--red);
+}
+
+.wb-row-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .wb-grid {
