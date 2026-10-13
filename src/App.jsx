@@ -63,6 +63,14 @@ const TRENDING_IDS = [
 
 const ALL_CATEGORIES = 'All';
 
+// The header search is site-wide: it narrows every row, not just the catalog.
+// An empty query matches everything, so this is a no-op until the user types.
+function matchesText(game, q) {
+  if (!q) return true;
+  return game.title.toLowerCase().includes(q)
+    || game.description.toLowerCase().includes(q);
+}
+
 // Row heading carries a count so each section reads as a real section rather
 // than a floating label.
 function RowHead({ title, count }) {
@@ -180,9 +188,7 @@ export default function App() {
       .filter((game) => {
         if (category !== ALL_CATEGORIES
           && !(game.categories || []).includes(category)) return false;
-        if (!q) return true;
-        return game.title.toLowerCase().includes(q)
-          || game.description.toLowerCase().includes(q);
+        return matchesText(game, q);
       })
       .sort((a, b) => {
         const pa = isPlayable(a) ? 0 : 1;
@@ -191,6 +197,22 @@ export default function App() {
         return a.title.localeCompare(b.title);
       });
   }, [query, category]);
+
+  // Curated rows obey the search too; a row with no matches is dropped rather
+  // than showing its "play something" hint while the user is searching.
+  const searching = query.trim().length > 0;
+  const continueList = useMemo(
+    () => continuePlaying.filter((g) => matchesText(g, query.trim().toLowerCase())),
+    [continuePlaying, query],
+  );
+  const trendingList = useMemo(
+    () => trending.filter((g) => matchesText(g, query.trim().toLowerCase())),
+    [trending, query],
+  );
+  const topPlayedList = useMemo(
+    () => topPlayed.filter((g) => matchesText(g, query.trim().toLowerCase())),
+    [topPlayed, query],
+  );
 
   const applyHash = useCallback(() => {
     const { head, rest } = parseHash();
@@ -263,21 +285,11 @@ export default function App() {
           />
         ) : (
           <>
-            <h1 className="wb-site-title">WhiteBox</h1>
-            <div className="wb-topbar">
-              <SignIn />
-              <ThemeToggle />
-            </div>
-            {continuePlaying.length > 0 && (
-              <GameRow title="Continue Playing" list={continuePlaying} emptyHint="" onOpen={openGame} />
-            )}
-            <GameRow title="Trending" list={trending} emptyHint="" onOpen={openGame} />
-            <GameRow title="Top Played" list={topPlayed} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
-
-            <section className="wb-row">
-              <RowHead title="Browse All" count={browse.length} />
-
-              <div className="wb-toolbar">
+            <header className="wb-header">
+              <h1 className="wb-brand">
+                <a href="#/">WhiteBox</a>
+              </h1>
+              <div className="wb-header-search">
                 <input
                   type="search"
                   className="wb-search"
@@ -286,6 +298,26 @@ export default function App() {
                   onChange={(e) => setQuery(e.target.value)}
                   aria-label="Search games"
                 />
+              </div>
+              <div className="wb-topbar">
+                <SignIn />
+                <ThemeToggle />
+              </div>
+            </header>
+            {continueList.length > 0 && (
+              <GameRow title="Continue Playing" list={continueList} emptyHint="" onOpen={openGame} />
+            )}
+            {(trendingList.length > 0 || !searching) && (
+              <GameRow title="Trending" list={trendingList} emptyHint="" onOpen={openGame} />
+            )}
+            {(topPlayedList.length > 0 || !searching) && (
+              <GameRow title="Top Played" list={topPlayedList} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
+            )}
+
+            <section className="wb-row">
+              <RowHead title="Browse All" count={browse.length} />
+
+              <div className="wb-chips-bar">
                 <div className="wb-chips" role="group" aria-label="Filter by category">
                   <button
                     type="button"

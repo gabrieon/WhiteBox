@@ -19,25 +19,53 @@
   min-width: 0;
 }
 
-.wb-site-title {
-  margin: 0 0 56px;
+/* ---------- header ----------
+   Brand hard left, search centred, account controls hard right. The two side
+   columns are equal (1fr each) so the middle column is truly centred even
+   though the brand and the account block are different widths. */
+.wb-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  margin: 0 0 52px;
+}
+
+.wb-brand {
+  justify-self: start;
+  margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(44px, 7vw, 84px);
+  font-size: 19px;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1;
-  text-align: center;
+  white-space: nowrap;
+}
+
+.wb-brand a {
   color: var(--ink);
+  text-decoration: none;
+}
+
+.wb-brand a:hover {
+  color: var(--muted);
+}
+
+.wb-header-search {
+  /* Definite width so the `auto` middle column sizes to it (a percentage
+     inside an auto track collapses to the input's intrinsic width).
+     clamp keeps it usable between the mobile breakpoint and 400px. */
+  width: clamp(160px, 32vw, 400px);
+  justify-self: center;
 }
 
 /* Top-right controls: sign-in + theme toggle. */
 .wb-topbar {
+  justify-self: end;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 14px;
-  margin: -32px 0 48px;
-  min-height: 32px;
+  gap: 12px;
 }
 
 .wb-signin-row {
@@ -129,17 +157,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- toolbar: search + category filter --- */
-
-.wb-toolbar {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 26px;
-}
+/* --- search + category filter --- */
 
 .wb-search {
+  display: block;
   width: 100%;
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 14px;
   border: 1px solid var(--line);
   background: var(--paper);
@@ -154,6 +177,10 @@
 
 .wb-search::placeholder {
   color: var(--muted);
+}
+
+.wb-chips-bar {
+  margin-bottom: 26px;
 }
 
 .wb-chips {
@@ -645,9 +672,27 @@
     padding: 32px 16px 56px;
   }
 
-  .wb-site-title {
-    font-size: clamp(36px, 11vw, 52px);
+  /* Header collapses to two rows: brand + controls, then a full-width search. */
+  .wb-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand actions'
+      'search search';
+    gap: 14px 12px;
     margin-bottom: 40px;
+  }
+
+  .wb-brand {
+    grid-area: brand;
+  }
+
+  .wb-header-search {
+    grid-area: search;
+    width: 100%;
+  }
+
+  .wb-topbar {
+    grid-area: actions;
   }
 
   .wb-grid {
