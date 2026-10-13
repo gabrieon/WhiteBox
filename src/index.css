@@ -21,6 +21,11 @@
   --red-pressed: #000000;
   --on-red: #ffffff;
 
+  /* The one colour in the app: the Play capsule. Dark enough that white text
+     clears 4.5:1 on it. */
+  --accent: #1d4ed8;
+  --accent-hover: #1e3a8a;
+
   /* Translucent panels that float over a game viewport. */
   --hud: rgba(255, 255, 255, 0.85);
   --hud-soft: rgba(255, 255, 255, 0.6);
@@ -43,6 +48,11 @@
   --red-hover: #ffffff;
   --red-pressed: #d8d8d8;
   --on-red: #0b0b0b;
+
+  /* Slightly lighter in dark so the capsule still reads as a control, not a
+     dark patch, while keeping white text legible. */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
 
   --hud: rgba(16, 16, 16, 0.85);
   --hud-soft: rgba(16, 16, 16, 0.6);

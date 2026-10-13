@@ -310,13 +310,50 @@
   object-fit: cover;
 }
 
+/* Title + Play capsule share one baseline row; the capsule hugs the right. */
+.wb-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .wb-card-title {
-  margin: 10px 0 0;
+  min-width: 0;
+  margin: 0;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.25;
   color: var(--ink);
+}
+
+.wb-card-play-btn {
+  flex: 0 0 auto;
+  padding: 7px 15px;
+  /* Transparent border on the default state keeps the capsule the exact same
+     size when it turns grey for a game that isn't playable yet. */
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background-color 140ms ease;
+}
+
+.wb-card-play-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.wb-card-play-btn:disabled {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: default;
 }
 
 .wb-card-meta {
@@ -336,32 +373,21 @@
   font-weight: 400;
 }
 
-.wb-card-play,
+/* Availability badge for games that aren't playable yet. Playable games get
+   the Play capsule in the footer instead. */
 .wb-card-soon {
   position: absolute;
   z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.wb-card-play {
-  bottom: 10px;
-  left: 10px;
-  padding: 5px 8px;
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.wb-card-soon {
   right: 10px;
   bottom: 10px;
+  display: inline-flex;
+  align-items: center;
   padding: 5px 8px;
   background: var(--muted);
   color: var(--paper);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

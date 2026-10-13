@@ -11,21 +11,38 @@ function metaLine(game) {
 }
 
 export default function GameCard({ game, onOpen, playable }) {
+  // One click handler for both entry points: the thumbnail and the Play
+  // capsule. Catalog-only games stay inert and are marked "Soon".
+  function open() {
+    if (playable) onOpen(game.id);
+  }
+
   return (
     <article className={`wb-card${playable ? ' is-playable' : ''}`}>
       <button
         type="button"
         className="wb-card-media"
-        onClick={() => playable && onOpen(game.id)}
+        onClick={open}
         aria-disabled={!playable}
         aria-label={playable ? `Play ${game.title}` : `${game.title}, coming soon`}
       >
         <GameArt type={game.type} thumb={`/thumbs/${game.id}.jpg`} />
-        <span className={playable ? 'wb-card-play' : 'wb-card-soon'}>
-          {playable ? 'Play' : 'Soon'}
-        </span>
+        {!playable && <span className="wb-card-soon">Soon</span>}
       </button>
-      <h3 className="wb-card-title">{game.title}</h3>
+
+      <div className="wb-card-foot">
+        <h3 className="wb-card-title">{game.title}</h3>
+        <button
+          type="button"
+          className="wb-card-play-btn"
+          onClick={open}
+          disabled={!playable}
+          aria-label={playable ? `Play ${game.title}` : `${game.title}, coming soon`}
+        >
+          Play
+        </button>
+      </div>
+
       <p className="wb-card-meta">{metaLine(game)}</p>
     </article>
   );
