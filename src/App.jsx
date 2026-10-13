@@ -136,9 +136,34 @@ export default function App() {
     .filter((game) => game !== undefined)
     .slice(0, 6), [plays]);
 
-  const trending = useMemo(() => TRENDING_IDS
-    .map((id) => findGame(id))
-    .filter((game) => game !== undefined), []);
+  // --- trending ---------------------------------------------------------------
+  // Derived from what this player actually opened, weighted toward recent
+  // activity (a play from a year ago shouldn't outrank one from this morning).
+  // Falls back to the curated shortlist for a visitor with no history yet, so
+  // the row is never empty on a first visit.
+  //
+  // `now` is captured once per mount: calling Date.now() inside the memo would
+  // be an impure read during render.
+
+  const [now] = useState(() => Date.now());
+
+  const trending = useMemo(() => {
+    const ranked = Object.entries(plays)
+      .map(([id, entry]) => {
+        const ageDays = Math.max(0, (now - entry.t) / 86_400_000);
+        return { id, score: entry.c / (1 + ageDays) };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => findGame(x.id))
+      .filter((game) => game !== undefined);
+
+    // Only trust the data once there's enough of it to be a ranking. With one or
+    // two opens the derived list is noise, so fall back to the curated
+    // shortlist until it has substance.
+    if (ranked.length >= 3) return ranked;
+    return TRENDING_IDS.map((id) => findGame(id)).filter((game) => game !== undefined);
+  }, [plays, now]);
 
   // --- browse all ------------------------------------------------------------
   // The full catalog, not just the playable few. Category chips are ordered by
@@ -156,12 +181,16 @@ export default function App() {
 
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(ALL_CATEGORIES);
+  // Most of the catalog is unbuilt, so let players hide it and see only the
+  // games they can actually launch.
+  const [playableOnly, setPlayableOnly] = useState(false);
 
   // Playable games first, then alphabetical — a real store's ordering.
   const browse = useMemo(() => {
     const q = query.trim().toLowerCase();
     return listGames()
       .filter((game) => {
+        if (playableOnly && !isPlayable(game)) return false;
         if (category !== ALL_CATEGORIES
           && !(game.categories || []).includes(category)) return false;
         return matchesText(game, q);
@@ -172,23 +201,28 @@ export default function App() {
         if (pa !== pb) return pa - pb;
         return a.title.localeCompare(b.title);
       });
-  }, [query, category]);
+  }, [query, category, playableOnly]);
 
-  // Curated rows obey the search too; a row with no matches is dropped rather
-  // than showing its "play something" hint while the user is searching.
+  // Curated rows obey the search, and each game lands in at most ONE curated
+  // row: the page used to show Reaction Test and Higher or Lower four times
+  // over (Continue + Trending + Top Played + Browse All). Priority order
+  // decides who wins, Browse All stays the complete catalog.
   const searching = query.trim().length > 0;
-  const continueList = useMemo(
-    () => continuePlaying.filter((g) => matchesText(g, query.trim().toLowerCase())),
-    [continuePlaying, query],
-  );
-  const trendingList = useMemo(
-    () => trending.filter((g) => matchesText(g, query.trim().toLowerCase())),
-    [trending, query],
-  );
-  const topPlayedList = useMemo(
-    () => topPlayed.filter((g) => matchesText(g, query.trim().toLowerCase())),
-    [topPlayed, query],
-  );
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const seen = new Set();
+    const take = (list) => list.filter((game) => {
+      if (seen.has(game.id)) return false;
+      seen.add(game.id);
+      return matchesText(game, q);
+    });
+
+    return {
+      continue: take(continuePlaying),
+      trending: take(trending),
+      topPlayed: take(topPlayed),
+    };
+  }, [continuePlaying, trending, topPlayed, query]);
 
   const applyHash = useCallback(() => {
     // Refresh saved-run keys on every navigation, in case a game saved (or
@@ -211,6 +245,17 @@ export default function App() {
     window.addEventListener('hashchange', applyHash);
     return () => window.removeEventListener('hashchange', applyHash);
   }, [applyHash]);
+
+  // Coming back to the tab is the other moment a run's saved state can have
+  // changed, so refresh the same way navigation does.
+  useEffect(() => {
+    function refresh() {
+      const map = listLocalProgress();
+      setProgressAt(Object.fromEntries(Object.entries(map).map(([id, entry]) => [id, entry.at])));
+    }
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, []);
 
   // The play screen has been removed, so opening a game is intentionally inert
   // until the new play flow is decided. The capsules stay on the cards so the
@@ -239,27 +284,46 @@ export default function App() {
             <ThemeToggle />
           </div>
         </header>
-        {continueList.length > 0 && (
-          <GameRow title="Continue Playing" list={continueList} emptyHint="" onOpen={openGame} />
+        {rows.continue.length > 0 && (
+          <GameRow title="Continue Playing" list={rows.continue} emptyHint="" onOpen={openGame} />
         )}
-        {(trendingList.length > 0 || !searching) && (
-          <GameRow title="Trending" list={trendingList} emptyHint="" onOpen={openGame} />
+        {rows.trending.length > 0 && (
+          <GameRow title="Trending" list={rows.trending} emptyHint="" onOpen={openGame} />
         )}
-        {(topPlayedList.length > 0 || !searching) && (
-          <GameRow title="Top Played" list={topPlayedList} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
+        {rows.topPlayed.length > 0 && (
+          <GameRow title="Top Played" list={rows.topPlayed} emptyHint="" onOpen={openGame} />
+        )}
+        {/* The only empty row worth keeping: a first-time visitor who has never
+            played anything. Any other empty row is hidden rather than left as a
+            bare heading. */}
+        {!searching && rows.topPlayed.length === 0 && Object.keys(plays).length === 0 && (
+          <GameRow
+            title="Top Played"
+            list={[]}
+            emptyHint="Play something and your most-played games will rank here."
+            onOpen={openGame}
+          />
         )}
 
         <section className="wb-row">
           <RowHead title="Browse All" count={browse.length} />
 
           <div className="wb-chips-bar">
-            <div className="wb-chips" role="group" aria-label="Filter by category">
+            <div className="wb-chips" role="group" aria-label="Filter games">
               <button
                 type="button"
                 className={`wb-chip${category === ALL_CATEGORIES ? ' is-on' : ''}`}
                 onClick={() => setCategory(ALL_CATEGORIES)}
               >
                 All
+              </button>
+              <button
+                type="button"
+                className={`wb-chip${playableOnly ? ' is-on' : ''}`}
+                onClick={() => setPlayableOnly((v) => !v)}
+                aria-pressed={playableOnly}
+              >
+                Playable only
               </button>
               {categoryList.map((c) => (
                 <button
