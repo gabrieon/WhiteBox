@@ -30,6 +30,10 @@
      clears 4.5:1 on it. */
   --accent: #1d4ed8;
   --accent-hover: #1e3a8a;
+  /* Accent as *text* (card title on hover). The capsule blue is tuned for
+     white-on-blue, which is the wrong direction for text on a page — this one
+     is picked to clear 4.5:1 on white. */
+  --accent-text: #1d4ed8;
 
   /* Translucent panels that float over a game viewport. */
   --hud: rgba(255, 255, 255, 0.85);
@@ -62,6 +66,9 @@
      dark patch, while keeping white text legible. */
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
+  /* On black, the capsule blue only reaches 3.81:1 as text — too low. This
+     lighter step clears it comfortably. */
+  --accent-text: #7aa2f7;
 
   --hud: rgba(16, 16, 16, 0.85);
   --hud-soft: rgba(16, 16, 16, 0.6);

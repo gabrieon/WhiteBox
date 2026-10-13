@@ -101,18 +101,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 1px solid var(--line);
-  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill);
   color: var(--muted);
   cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease, transform 170ms ease;
 }
 
 .wb-theme-toggle:hover {
-  border-color: var(--ink);
+  background: var(--line);
   color: var(--ink);
+}
+
+.wb-theme-toggle:active {
+  transform: scale(0.94);
 }
 
 .wb-signin-slot {
@@ -201,6 +207,12 @@
 .wb-search:focus {
   outline: 2px solid var(--ink);
   outline-offset: 1px;
+}
+
+/* Subtle lift on hover — the field already has a strong focus state, so this
+   stays quiet. */
+.wb-search:hover:not(:focus) {
+  background: var(--line);
 }
 
 /* Suppress the native WebKit clear button; we ship our own. */
@@ -412,6 +424,24 @@
   letter-spacing: 0;
   line-height: 1.25;
   color: var(--ink);
+  transition: color 140ms ease;
+}
+
+/* ---- card hover ----
+   Only playable cards respond. A "coming soon" card stays completely inert so
+   the feedback never promises an action that can't happen. */
+
+.wb-card.is-playable .wb-card-media {
+  transition: transform 170ms ease;
+}
+
+.wb-card.is-playable .wb-card-media:hover,
+.wb-card.is-playable .wb-card-media:focus-visible {
+  transform: scale(1.025);
+}
+
+.wb-card.is-playable:hover .wb-card-title {
+  color: var(--accent-text);
 }
 
 .wb-card-play-btn {
@@ -427,11 +457,16 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  transition: background-color 140ms ease;
+  transition: background-color 140ms ease, transform 170ms ease;
 }
 
 .wb-card-play-btn:hover:not(:disabled) {
   background: var(--accent-hover);
+  transform: scale(1.06);
+}
+
+.wb-card-play-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 /* Disabled capsule: transparent fill so the contrast is measured against the
@@ -524,6 +559,8 @@
   }
 }
 
+/* Reduced motion: keep the colour feedback, drop the movement. A thumbnail
+   that jumps on hover is exactly what this setting is asking us not to do. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -531,5 +568,13 @@
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+
+  .wb-card.is-playable .wb-card-media:hover,
+  .wb-card.is-playable .wb-card-media:focus-visible,
+  .wb-card-play-btn:hover:not(:disabled),
+  .wb-card-play-btn:active:not(:disabled),
+  .wb-theme-toggle:active {
+    transform: none;
   }
 }
