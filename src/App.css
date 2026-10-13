@@ -349,9 +349,11 @@
   background: var(--accent-hover);
 }
 
+/* Disabled capsule: transparent fill so the contrast is measured against the
+   card, not a surface tint — --muted on --paper clears 4.5:1 in both themes. */
 .wb-card-play-btn:disabled {
   border-color: var(--line);
-  background: var(--surface);
+  background: transparent;
   color: var(--muted);
   cursor: default;
 }
