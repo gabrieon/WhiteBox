@@ -1,5 +1,8 @@
 // Distinct local artwork per game type. Unknown types fall back to a neutral
 // box so a missing thumbnail never breaks the card layout.
+//
+// Flat black-and-grey only: no rounded corners, no tilts, no candy palette.
+// Shapes and positions are unchanged from the original illustrations.
 
 function ReactionArt() {
   return (
@@ -39,14 +42,14 @@ function VisualArt() {
     <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
       <rect width="160" height="120" fill="var(--lavender)" />
       <g stroke="var(--ink)" strokeWidth="2.2" strokeLinejoin="round">
-        <rect x="26" y="30" width="52" height="60" rx="4" fill="var(--white)" transform="rotate(-7 52 60)" />
-        <rect x="84" y="32" width="52" height="60" rx="4" fill="var(--pink)" transform="rotate(6 110 62)" />
+        <rect x="26" y="30" width="52" height="60" fill="var(--white)" />
+        <rect x="84" y="32" width="52" height="60" fill="var(--pink)" />
       </g>
-      <g transform="rotate(-7 52 60)" stroke="var(--ink)" strokeWidth="2" fill="none">
+      <g stroke="var(--ink)" strokeWidth="2" fill="none">
         <circle cx="46" cy="52" r="7" fill="var(--mint)" />
         <path d="M34 78c6-10 12-12 18-6s10 4 16-2" />
       </g>
-      <g transform="rotate(6 110 62)" stroke="var(--ink)" strokeWidth="2" fill="none">
+      <g stroke="var(--ink)" strokeWidth="2" fill="none">
         <path d="M94 50h32M94 60h32M94 70h22" strokeLinecap="round" />
       </g>
       <text x="80" y="72" textAnchor="middle" fontFamily="var(--font-display)" fontSize="34" fill="var(--ink)">?</text>
@@ -60,7 +63,7 @@ function IconArt({ bg = 'var(--paper)', icon = '?', accent = 'var(--lime)' }) {
       <rect width="160" height="120" fill={bg} />
       <path d="M18 24h124M18 94h124" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeDasharray="6 8" opacity="0.45" />
       <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
-        <rect x="34" y="24" width="92" height="72" rx="16" fill="var(--white)" transform="rotate(-3 80 60)" />
+        <rect x="34" y="24" width="92" height="72" fill="var(--white)" />
         <circle cx="118" cy="32" r="17" fill={accent} />
       </g>
       <text x="80" y="72" textAnchor="middle" fontFamily="var(--font-display)" fontSize="38" fill="var(--ink)">{icon}</text>
@@ -70,23 +73,24 @@ function IconArt({ bg = 'var(--paper)', icon = '?', accent = 'var(--lime)' }) {
   );
 }
 
-// 3D arena (single-player Orb Arena): neon orb over a perspective grid floor.
+// 3D arena (single-player Orb Arena): orb over a perspective grid floor.
+// Charcoal + grey so the thumbnail matches the flat black/grey site.
 function ArenaArt() {
   return (
     <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
-      <rect width="160" height="120" fill="#0b1024" />
-      <g stroke="#2b47a0" strokeWidth="1" opacity="0.75">
+      <rect width="160" height="120" fill="#141414" />
+      <g stroke="#3d3d3d" strokeWidth="1" opacity="0.75">
         <path d="M0 88h160M0 100h160M0 112h160" />
         <path d="M80 80 14 120M80 80 46 120M80 80 80 120M80 80 114 120M80 80 146 120" />
       </g>
-      <circle cx="80" cy="46" r="21" fill="#4ff3ff" opacity="0.18" />
-      <circle cx="80" cy="46" r="14" fill="#0a2a3a" stroke="#4ff3ff" strokeWidth="2.2" />
-      <circle cx="74" cy="40" r="4" fill="#eaffff" opacity="0.85" />
-      <rect x="34" y="66" width="13" height="24" rx="6.5" fill="#d9ff43" stroke="#0b1024" strokeWidth="1.8" />
-      <path d="M40.5 78 40.5 68" stroke="#0b1024" strokeWidth="1.4" />
-      <circle cx="126" cy="30" r="2.4" fill="#4ff3ff" opacity="0.7" />
-      <circle cx="140" cy="52" r="1.8" fill="#4ff3ff" opacity="0.5" />
-      <circle cx="22" cy="34" r="1.8" fill="#d9ff43" opacity="0.5" />
+      <circle cx="80" cy="46" r="21" fill="#e0e0e0" opacity="0.18" />
+      <circle cx="80" cy="46" r="14" fill="#262626" stroke="#dcdcdc" strokeWidth="2.2" />
+      <circle cx="74" cy="40" r="4" fill="#ffffff" opacity="0.85" />
+      <rect x="34" y="66" width="13" height="24" fill="#c9c9c9" stroke="#141414" strokeWidth="1.8" />
+      <path d="M40.5 78 40.5 68" stroke="#141414" strokeWidth="1.4" />
+      <circle cx="126" cy="30" r="2.4" fill="#9a9a9a" opacity="0.7" />
+      <circle cx="140" cy="52" r="1.8" fill="#9a9a9a" opacity="0.5" />
+      <circle cx="22" cy="34" r="1.8" fill="#c9c9c9" opacity="0.5" />
     </svg>
   );
 }
@@ -95,20 +99,20 @@ function ArenaArt() {
 function ArenaOnlineArt() {
   return (
     <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
-      <rect width="160" height="120" fill="#0b1024" />
-      <g stroke="#2b47a0" strokeWidth="1" opacity="0.6">
+      <rect width="160" height="120" fill="#141414" />
+      <g stroke="#3d3d3d" strokeWidth="1" opacity="0.6">
         <path d="M0 96h160M0 108h160" />
         <path d="M40 92 20 120M80 92 80 120M120 92 140 120" />
       </g>
-      <path d="M52 62c14-16 42-16 56 0" fill="none" stroke="#4ff3ff" strokeWidth="1.8" strokeDasharray="4 4" opacity="0.85" />
-      <circle cx="80" cy="50" r="3" fill="#4ff3ff" />
-      <circle cx="80" cy="50" r="7" fill="none" stroke="#4ff3ff" strokeWidth="1.2" opacity="0.5" />
-      <rect x="40" y="62" width="14" height="26" rx="7" fill="#d9ff43" stroke="#0b1024" strokeWidth="1.8" />
-      <rect x="106" y="62" width="14" height="26" rx="7" fill="#4ff3ff" stroke="#0b1024" strokeWidth="1.8" />
-      <circle cx="47" cy="56" r="4.5" fill="#0a2a3a" stroke="#4ff3ff" strokeWidth="1.6" />
-      <circle cx="113" cy="56" r="4.5" fill="#0a2a3a" stroke="#4ff3ff" strokeWidth="1.6" />
-      <circle cx="80" cy="86" r="6" fill="#0a2a3a" stroke="#4ff3ff" strokeWidth="1.8" />
-      <circle cx="80" cy="86" r="9" fill="#4ff3ff" opacity="0.14" />
+      <path d="M52 62c14-16 42-16 56 0" fill="none" stroke="#dcdcdc" strokeWidth="1.8" strokeDasharray="4 4" opacity="0.85" />
+      <circle cx="80" cy="50" r="3" fill="#dcdcdc" />
+      <circle cx="80" cy="50" r="7" fill="none" stroke="#dcdcdc" strokeWidth="1.2" opacity="0.5" />
+      <rect x="40" y="62" width="14" height="26" fill="#c9c9c9" stroke="#141414" strokeWidth="1.8" />
+      <rect x="106" y="62" width="14" height="26" fill="#dcdcdc" stroke="#141414" strokeWidth="1.8" />
+      <circle cx="47" cy="56" r="4.5" fill="#262626" stroke="#dcdcdc" strokeWidth="1.6" />
+      <circle cx="113" cy="56" r="4.5" fill="#262626" stroke="#dcdcdc" strokeWidth="1.6" />
+      <circle cx="80" cy="86" r="6" fill="#262626" stroke="#dcdcdc" strokeWidth="1.8" />
+      <circle cx="80" cy="86" r="9" fill="#e0e0e0" opacity="0.14" />
     </svg>
   );
 }
@@ -117,18 +121,18 @@ function ArenaOnlineArt() {
 function TwoDArt() {
   return (
     <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
-      <rect width="160" height="120" fill="#101322" />
-      <rect x="0" y="92" width="160" height="28" fill="#1d2440" />
-      <rect x="0" y="92" width="160" height="4" fill="#3355aa" />
-      <rect x="26" y="66" width="42" height="10" rx="3" fill="#1d2440" stroke="#3355aa" strokeWidth="1.4" />
-      <rect x="96" y="52" width="42" height="10" rx="3" fill="#1d2440" stroke="#3355aa" strokeWidth="1.4" />
-      <rect x="40" y="76" width="16" height="16" rx="3" fill="#d9ff43" stroke="#0b1024" strokeWidth="1.6" />
-      <circle cx="46" cy="82" r="1.8" fill="#0b1024" />
-      <circle cx="52" cy="82" r="1.8" fill="#0b1024" />
-      <circle cx="112" cy="40" r="6" fill="#0a2a3a" stroke="#4ff3ff" strokeWidth="2" />
-      <circle cx="112" cy="40" r="9.5" fill="#4ff3ff" opacity="0.16" />
-      <circle cx="60" cy="56" r="4.5" fill="#0a2a3a" stroke="#ffd166" strokeWidth="1.8" />
-      <circle cx="140" cy="80" r="4" fill="#0a2a3a" stroke="#ff6b6b" strokeWidth="1.6" />
+      <rect width="160" height="120" fill="#141414" />
+      <rect x="0" y="92" width="160" height="28" fill="#242424" />
+      <rect x="0" y="92" width="160" height="4" fill="#3d3d3d" />
+      <rect x="26" y="66" width="42" height="10" fill="#242424" stroke="#3d3d3d" strokeWidth="1.4" />
+      <rect x="96" y="52" width="42" height="10" fill="#242424" stroke="#3d3d3d" strokeWidth="1.4" />
+      <rect x="40" y="76" width="16" height="16" fill="#c9c9c9" stroke="#141414" strokeWidth="1.6" />
+      <circle cx="46" cy="82" r="1.8" fill="#141414" />
+      <circle cx="52" cy="82" r="1.8" fill="#141414" />
+      <circle cx="112" cy="40" r="6" fill="#262626" stroke="#dcdcdc" strokeWidth="2" />
+      <circle cx="112" cy="40" r="9.5" fill="#e0e0e0" opacity="0.16" />
+      <circle cx="60" cy="56" r="4.5" fill="#262626" stroke="#9a9a9a" strokeWidth="1.8" />
+      <circle cx="140" cy="80" r="4" fill="#262626" stroke="#6b6b6b" strokeWidth="1.6" />
     </svg>
   );
 }

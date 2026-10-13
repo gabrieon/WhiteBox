@@ -27,7 +27,7 @@
   padding: 10px 16px;
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--line);
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition: transform 120ms ease;
 }
 
 .od-score-p1 {
