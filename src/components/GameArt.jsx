@@ -57,18 +57,72 @@ function VisualArt() {
   );
 }
 
-function IconArt({ bg = 'var(--paper)', icon = '?', accent = 'var(--lime)' }) {
+// Generic tile art. Five distinct compositions rather than one shape with a
+// different letter in it — 50 catalog games all sharing a single silhouette is
+// what made the grid look like wallpaper. Same flat black/grey language
+// throughout: no rounding, no tilts, no colour.
+function IconArt({ bg = 'var(--paper)', icon = '?', accent = 'var(--lime)', variant = 0 }) {
   return (
     <svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="presentation">
       <rect width="160" height="120" fill={bg} />
-      <path d="M18 24h124M18 94h124" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeDasharray="6 8" opacity="0.45" />
-      <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
-        <rect x="34" y="24" width="92" height="72" fill="var(--white)" />
-        <circle cx="118" cy="32" r="17" fill={accent} />
-      </g>
-      <text x="80" y="72" textAnchor="middle" fontFamily="var(--font-display)" fontSize="38" fill="var(--ink)">{icon}</text>
-      <circle cx="44" cy="84" r="5" fill={accent} stroke="var(--ink)" strokeWidth="2" />
-      <circle cx="118" cy="84" r="5" fill="var(--ink)" />
+
+      {variant === 0 && (
+        <>
+          <path d="M18 24h124M18 94h124" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeDasharray="6 8" opacity="0.45" />
+          <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
+            <rect x="34" y="24" width="92" height="72" fill="var(--white)" />
+            <circle cx="118" cy="32" r="17" fill={accent} />
+          </g>
+          <text x="80" y="72" textAnchor="middle" fontFamily="var(--font-display)" fontSize="38" fill="var(--ink)">{icon}</text>
+          <circle cx="44" cy="84" r="5" fill={accent} stroke="var(--ink)" strokeWidth="2" />
+          <circle cx="118" cy="84" r="5" fill="var(--ink)" />
+        </>
+      )}
+
+      {variant === 1 && (
+        <>
+          <circle cx="80" cy="60" r="52" fill="none" stroke="var(--ink)" strokeWidth="2" strokeDasharray="4 7" opacity="0.45" />
+          <circle cx="80" cy="60" r="38" fill="var(--white)" stroke="var(--ink)" strokeWidth="2.4" />
+          <circle cx="80" cy="60" r="26" fill={accent} stroke="var(--ink)" strokeWidth="2" />
+          <text x="80" y="70" textAnchor="middle" fontFamily="var(--font-display)" fontSize="26" fill="var(--ink)">{icon}</text>
+          <circle cx="22" cy="26" r="5" fill="var(--ink)" />
+          <circle cx="138" cy="96" r="5" fill="var(--ink)" />
+        </>
+      )}
+
+      {variant === 2 && (
+        <>
+          <rect x="30" y="20" width="100" height="80" fill="var(--white)" stroke="var(--ink)" strokeWidth="2.4" />
+          <g stroke="var(--ink)" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M44 40h58M44 54h72M44 68h44" />
+          </g>
+          <rect x="94" y="76" width="24" height="16" fill={accent} stroke="var(--ink)" strokeWidth="2" />
+          <text x="46" y="90" textAnchor="start" fontFamily="var(--font-display)" fontSize="17" fill="var(--ink)">{icon}</text>
+        </>
+      )}
+
+      {variant === 3 && (
+        <>
+          <g stroke="var(--ink)" strokeWidth="2.4" strokeLinejoin="round">
+            <path d="M80 22 118 66 42 66Z" fill="var(--white)" />
+            <rect x="30" y="76" width="40" height="26" fill={accent} />
+            <rect x="78" y="76" width="52" height="26" fill="var(--white)" />
+          </g>
+          <text x="80" y="62" textAnchor="middle" fontFamily="var(--font-display)" fontSize="23" fill="var(--ink)">{icon}</text>
+        </>
+      )}
+
+      {variant === 4 && (
+        <>
+          <g stroke="var(--ink)" strokeWidth="2.2" strokeLinejoin="round">
+            <rect x="30" y="24" width="44" height="32" fill="var(--white)" />
+            <rect x="82" y="24" width="48" height="32" fill={accent} />
+            <rect x="30" y="64" width="44" height="32" fill="var(--white)" />
+            <rect x="82" y="64" width="48" height="32" fill="var(--white)" />
+          </g>
+          <text x="106" y="48" textAnchor="middle" fontFamily="var(--font-display)" fontSize="22" fill="var(--ink)">{icon}</text>
+        </>
+      )}
     </svg>
   );
 }
@@ -151,24 +205,26 @@ function FallbackArt() {
   );
 }
 
+// `variant` picks one of five compositions so neighbouring tiles in the grid
+// rarely repeat the same silhouette.
 const artByType = {
   reaction: ReactionArt,
   country: CountryArt,
   visual: VisualArt,
-  test: () => <IconArt bg="var(--pink)" icon="✓" accent="var(--lime)" />,
-  puzzle: () => <IconArt bg="var(--lavender)" icon="#" accent="var(--sky)" />,
-  language: () => <IconArt bg="var(--mint)" icon="あ" accent="var(--pink)" />,
-  audio: () => <IconArt bg="var(--sky)" icon="♫" accent="var(--lime)" />,
-  ai: () => <IconArt bg="var(--lavender)" icon="AI" accent="var(--coral)" />,
-  map: () => <IconArt bg="var(--sky)" icon="⌖" accent="var(--lime)" />,
-  strategy: () => <IconArt bg="var(--paper)" icon="♞" accent="var(--lavender)" />,
-  brand: () => <IconArt bg="var(--coral)" icon="B" accent="var(--white)" />,
-  drawing: () => <IconArt bg="var(--pink)" icon="✎" accent="var(--mint)" />,
-  flag: () => <IconArt bg="var(--mint)" icon="⚑" accent="var(--coral)" />,
-  typing: () => <IconArt bg="var(--paper)" icon="W" accent="var(--lime)" />,
-  memory: () => <IconArt bg="var(--lavender)" icon="▦" accent="var(--pink)" />,
-  versus: () => <IconArt bg="var(--lime)" icon="VS" accent="var(--white)" />,
-  word: () => <IconArt bg="var(--mint)" icon="R" accent="var(--sky)" />,
+  test: () => <IconArt bg="var(--pink)" icon="✓" accent="var(--lime)" variant={1} />,
+  puzzle: () => <IconArt bg="var(--lavender)" icon="#" accent="var(--sky)" variant={4} />,
+  language: () => <IconArt bg="var(--mint)" icon="あ" accent="var(--pink)" variant={2} />,
+  audio: () => <IconArt bg="var(--sky)" icon="♫" accent="var(--lime)" variant={0} />,
+  ai: () => <IconArt bg="var(--lavender)" icon="AI" accent="var(--coral)" variant={3} />,
+  map: () => <IconArt bg="var(--sky)" icon="⌖" accent="var(--lime)" variant={1} />,
+  strategy: () => <IconArt bg="var(--paper)" icon="♞" accent="var(--lavender)" variant={4} />,
+  brand: () => <IconArt bg="var(--coral)" icon="B" accent="var(--white)" variant={2} />,
+  drawing: () => <IconArt bg="var(--pink)" icon="✎" accent="var(--mint)" variant={0} />,
+  flag: () => <IconArt bg="var(--mint)" icon="⚑" accent="var(--coral)" variant={3} />,
+  typing: () => <IconArt bg="var(--paper)" icon="W" accent="var(--lime)" variant={2} />,
+  memory: () => <IconArt bg="var(--lavender)" icon="▦" accent="var(--pink)" variant={4} />,
+  versus: () => <IconArt bg="var(--lime)" icon="VS" accent="var(--white)" variant={1} />,
+  word: () => <IconArt bg="var(--mint)" icon="R" accent="var(--sky)" variant={3} />,
   arena: ArenaArt,
   'arena-online': ArenaOnlineArt,
   '2d': TwoDArt,
