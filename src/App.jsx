@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { findGame, isPlayable } from './games/registry.js';
+import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameStage from './components/GameStage.jsx';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
@@ -60,10 +60,23 @@ const TRENDING_IDS = [
   'orb-arena',
 ];
 
+const ALL_CATEGORIES = 'All';
+
+// Row heading carries a count so each section reads as a real section rather
+// than a floating label.
+function RowHead({ title, count }) {
+  return (
+    <div className="wb-row-head">
+      <h2 className="wb-row-title">{title}</h2>
+      {count > 0 && <span className="wb-row-count">{count}</span>}
+    </div>
+  );
+}
+
 function GameRow({ title, list, emptyHint, onOpen }) {
   return (
     <section className="wb-row">
-      <h2 className="wb-row-title">{title}</h2>
+      <RowHead title={title} count={list.length} />
       {list.length === 0 ? (
         <p className="wb-row-empty">{emptyHint}</p>
       ) : (
@@ -142,6 +155,42 @@ export default function App() {
     .map((id) => findGame(id))
     .filter((game) => game !== undefined), []);
 
+  // --- browse all ------------------------------------------------------------
+  // The full catalog, not just the playable few. Category chips are ordered by
+  // how many games actually use them, so the useful ones come first.
+
+  const categoryList = useMemo(() => {
+    const counts = new Map();
+    listGames().forEach((game) => {
+      (game.categories || []).forEach((c) => counts.set(c, (counts.get(c) || 0) + 1));
+    });
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name]) => name);
+  }, []);
+
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState(ALL_CATEGORIES);
+
+  // Playable games first, then alphabetical — a real store's ordering.
+  const browse = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return listGames()
+      .filter((game) => {
+        if (category !== ALL_CATEGORIES
+          && !(game.categories || []).includes(category)) return false;
+        if (!q) return true;
+        return game.title.toLowerCase().includes(q)
+          || game.description.toLowerCase().includes(q);
+      })
+      .sort((a, b) => {
+        const pa = isPlayable(a) ? 0 : 1;
+        const pb = isPlayable(b) ? 0 : 1;
+        if (pa !== pb) return pa - pb;
+        return a.title.localeCompare(b.title);
+      });
+  }, [query, category]);
+
   const applyHash = useCallback(() => {
     const { head, rest } = parseHash();
     // Refresh saved-run keys on every navigation: the game just exited may
@@ -219,7 +268,56 @@ export default function App() {
               <GameRow title="Continue Playing" list={continuePlaying} emptyHint="" onOpen={openGame} />
             )}
             <GameRow title="Trending" list={trending} emptyHint="" onOpen={openGame} />
-            <GameRow title="Top Played" list={topPlayed} emptyHint="Your most-played games will show up here." onOpen={openGame} />
+            <GameRow title="Top Played" list={topPlayed} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
+
+            <section className="wb-row">
+              <RowHead title="Browse All" count={browse.length} />
+
+              <div className="wb-toolbar">
+                <input
+                  type="search"
+                  className="wb-search"
+                  placeholder="Search games"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Search games"
+                />
+                <div className="wb-chips" role="group" aria-label="Filter by category">
+                  <button
+                    type="button"
+                    className={`wb-chip${category === ALL_CATEGORIES ? ' is-on' : ''}`}
+                    onClick={() => setCategory(ALL_CATEGORIES)}
+                  >
+                    All
+                  </button>
+                  {categoryList.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`wb-chip${category === c ? ' is-on' : ''}`}
+                      onClick={() => setCategory(c)}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {browse.length === 0 ? (
+                <p className="wb-row-empty">No games match “{query}”.</p>
+              ) : (
+                <div className="wb-grid">
+                  {browse.map((game) => (
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      playable={isPlayable(game)}
+                      onOpen={openGame}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
       </main>

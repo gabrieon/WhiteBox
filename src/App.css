@@ -82,13 +82,81 @@
   margin-bottom: 0;
 }
 
+.wb-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
 .wb-row-title {
-  margin: 0 0 20px;
+  margin: 0;
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--ink);
+}
+
+.wb-row-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- toolbar: search + category filter --- */
+
+.wb-toolbar {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 26px;
+}
+
+.wb-search {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  outline: none;
+}
+
+.wb-search:focus {
+  border-color: var(--ink);
+}
+
+.wb-search::placeholder {
+  color: var(--muted);
+}
+
+.wb-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wb-chip {
+  padding: 7px 13px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.wb-chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.wb-chip.is-on {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .wb-row-empty {
@@ -172,6 +240,18 @@
   letter-spacing: 0;
   line-height: 1.25;
   color: var(--ink);
+}
+
+.wb-card-meta {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.wb-card:not(.is-playable) .wb-card-meta {
+  color: var(--line);
 }
 
 .wb-card:not(.is-playable) .wb-card-title {
