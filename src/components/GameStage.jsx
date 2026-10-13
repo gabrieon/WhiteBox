@@ -43,15 +43,7 @@ function CloseIcon() {
   );
 }
 
-function HeartIcon({ filled }) {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.8 8.7c0 4.1-8.8 10-8.8 10s-8.8-5.9-8.8-10A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.8 2.6Z" />
-    </svg>
-  );
-}
-
-export default function GameStage({ game, favorite, onFavorite, onExit }) {
+export default function GameStage({ game, onExit }) {
   const frameRef = useRef(null);
   const [runId, setRunId] = useState(0);
   // GameStage is keyed by game id (see App.jsx), so a fresh mount already
@@ -109,18 +101,6 @@ export default function GameStage({ game, favorite, onFavorite, onExit }) {
           <p className="wb-game-meta">{mode} · {players}</p>
           <h1 className="wb-game-title">{game.title}</h1>
           <p className="wb-game-desc">{game.description}</p>
-          <div className="wb-game-actions">
-            <button
-              type="button"
-              className={`wb-game-fav${favorite ? ' is-fav' : ''}`}
-              onClick={() => onFavorite(game.id)}
-              aria-pressed={favorite}
-              aria-label={favorite ? `Remove ${game.title} from favorites` : `Add ${game.title} to favorites`}
-            >
-              <HeartIcon filled={favorite} />
-              {favorite ? 'Saved' : 'Save'}
-            </button>
-          </div>
         </div>
       </div>
 

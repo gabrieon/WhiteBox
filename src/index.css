@@ -1,17 +1,17 @@
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* Warm off-white palette with black text. Stark, minimal, easy on eyes. */
-  --paper: #f5f5f0;
-  --ink: #1a1a1a;
-  --muted: #666666;
-  /* Stark monochrome: near-black accents on warm off-white. */
-  --red: #111111;
-  --red-hover: #333333;
-  --red-pressed: #000000;
+  --paper: #000000;
+  --ink: #ffffff;
+  --muted: #888888;
+  --line: #222222;
+  --surface: #0a0a0a;
+  /* Kept for game interiors, which keep their own look. Site chrome no
+     longer uses it. */
+  --red: #ff2222;
+  --red-hover: #ff4444;
+  --red-pressed: #dd1111;
   --on-red: #ffffff;
-  --line: #e0e0e0;
-  --surface: #fafaf7;
 
   --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -51,11 +51,11 @@ input {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--red);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--red);
-  color: #ffffff;
+  background: var(--ink);
+  color: var(--paper);
 }
