@@ -228,6 +228,8 @@
   background: transparent;
 }
 
+/* Rounded thumbnail. `overflow: hidden` already clips the SVG artwork and
+   any photo, so the radius only has to go on the frame. */
 .wb-card-media {
   display: block;
   width: 100%;
@@ -235,6 +237,7 @@
   padding: 0;
   overflow: hidden;
   border: 0;
+  border-radius: 12px;
   background: var(--surface);
   cursor: pointer;
 }
@@ -440,6 +443,7 @@
 .wb-game-cover {
   overflow: hidden;
   aspect-ratio: 4 / 3;
+  border-radius: 12px;
 }
 
 .wb-game-cover .wb-game-art {
