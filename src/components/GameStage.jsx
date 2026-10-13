@@ -95,7 +95,7 @@ export default function GameStage({ game, onExit }) {
 
       <div className="wb-game-hero">
         <div className="wb-game-cover">
-          <GameArt type={game.type} />
+          <GameArt type={game.type} thumb={`/thumbs/${game.id}.jpg`} />
         </div>
         <div className="wb-game-hero-copy">
           <p className="wb-game-meta">{mode} · {players}</p>

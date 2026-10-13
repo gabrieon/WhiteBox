@@ -10,7 +10,7 @@ export default function GameCard({ game, onOpen, playable }) {
         aria-disabled={!playable}
         aria-label={playable ? `Play ${game.title}` : `${game.title}, coming soon`}
       >
-        <GameArt type={game.type} />
+        <GameArt type={game.type} thumb={`/thumbs/${game.id}.jpg`} />
       </button>
       <h3 className="wb-card-title">{game.title}</h3>
     </article>

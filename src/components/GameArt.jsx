@@ -170,11 +170,21 @@ const artByType = {
   '2d': TwoDArt,
 };
 
-export default function GameArt({ type }) {
+export default function GameArt({ type, thumb }) {
   const Art = artByType[type] || FallbackArt;
   return (
     <div className={`wb-game-art wb-game-art-${type || 'unknown'}`}>
       <Art />
+      {thumb && (
+        <img
+          className="wb-game-photo"
+          src={thumb}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          onError={(event) => { event.currentTarget.style.display = 'none'; }}
+        />
+      )}
     </div>
   );
 }
