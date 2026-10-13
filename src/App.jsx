@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
@@ -81,6 +81,14 @@ function GameRow({ title, list, emptyHint, onOpen }) {
         </div>
       )}
     </section>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
   );
 }
 
@@ -181,6 +189,33 @@ export default function App() {
 
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(ALL_CATEGORIES);
+  const searchRef = useRef(null);
+
+  // "/" jumps to search (unless you're already typing somewhere) and Escape
+  // clears it — the shortcuts people expect from a store search box.
+  useEffect(() => {
+    function onKeyDown(e) {
+      const active = document.activeElement;
+      const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+
+      if (e.key === '/' && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === 'Escape' && active === searchRef.current) {
+        setQuery('');
+        searchRef.current?.blur();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  function clearSearch() {
+    setQuery('');
+    searchRef.current?.focus();
+  }
   // Most of the catalog is unbuilt, so let players hide it and see only the
   // games they can actually launch.
   const [playableOnly, setPlayableOnly] = useState(false);
@@ -271,13 +306,24 @@ export default function App() {
           </h1>
           <div className="wb-header-search">
             <input
+              ref={searchRef}
               type="search"
               className="wb-search"
-              placeholder="Search games"
+              placeholder="Search games  ( / )"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search games"
             />
+            {query && (
+              <button
+                type="button"
+                className="wb-search-clear"
+                onClick={clearSearch}
+                aria-label="Clear search"
+              >
+                <ClearIcon />
+              </button>
+            )}
           </div>
           <div className="wb-topbar">
             <SignIn />
