@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { findGame, games, isPlayable } from './games/registry.js';
+import { findGame, isPlayable } from './games/registry.js';
 import GameStage from './components/GameStage.jsx';
 import GameCard from './components/GameCard.jsx';
 
@@ -17,21 +17,88 @@ function parseHash() {
   return { head: raw.slice(0, slash), rest: raw.slice(slash + 1) };
 }
 
+// --- play tracking ----------------------------------------------------------
+// Local play history powers the Continue Playing and Top Played rows:
+// { [gameId]: { c: open count, t: last-opened timestamp } }.
+const PLAYS_KEY = 'whitebox:plays';
+
+function readPlays() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PLAYS_KEY));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const clean = {};
+    for (const [id, entry] of Object.entries(parsed)) {
+      if (typeof id === 'string' && entry && typeof entry === 'object'
+        && Number.isFinite(entry.c) && Number.isFinite(entry.t)) {
+        clean[id] = { c: entry.c, t: entry.t };
+      }
+    }
+    return clean;
+  } catch {
+    return {};
+  }
+}
+
+function writePlays(value) {
+  try {
+    window.localStorage.setItem(PLAYS_KEY, JSON.stringify(value));
+  } catch {
+    // Private mode etc. — rows simply reset on reload.
+  }
+}
+
+// Curated trending row: the most social, instantly playable games.
+const TRENDING_IDS = [
+  'orb-arena-mp',
+  'orb-duel',
+  'higher-lower',
+  'reaction-test',
+  'orb-dash-2d',
+  'orb-arena',
+];
+
+function GameRow({ title, list, onOpen }) {
+  if (list.length === 0) return null;
+  return (
+    <section className="wb-row">
+      <h2 className="wb-row-title">{title}</h2>
+      <div className="wb-grid">
+        {list.map((game) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            playable={isPlayable(game)}
+            onOpen={onOpen}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
   const [currentView, setCurrentView] = useState('browse');
+  const [plays, setPlays] = useState(readPlays);
 
   const activeGame = findGame(currentView);
   const canPlay = isPlayable(activeGame);
 
-  // Playable games first, then coming soon — registry order kept within each.
-  const orderedGames = useMemo(() => {
-    const playable = [];
-    const soon = [];
-    for (const game of games) {
-      (isPlayable(game) ? playable : soon).push(game);
-    }
-    return [...playable, ...soon];
-  }, []);
+  const continuePlaying = useMemo(() => Object.entries(plays)
+    .sort((a, b) => b[1].t - a[1].t)
+    .map(([id]) => findGame(id))
+    .filter((game) => game !== undefined)
+    .slice(0, 6), [plays]);
+
+  const topPlayed = useMemo(() => Object.entries(plays)
+    .filter(([, entry]) => entry.c > 0)
+    .sort((a, b) => b[1].c - a[1].c)
+    .map(([id]) => findGame(id))
+    .filter((game) => game !== undefined)
+    .slice(0, 6), [plays]);
+
+  const trending = useMemo(() => TRENDING_IDS
+    .map((id) => findGame(id))
+    .filter((game) => game !== undefined), []);
 
   const applyHash = useCallback(() => {
     const { head, rest } = parseHash();
@@ -80,6 +147,12 @@ export default function App() {
 
   function openGame(gameId) {
     if (!isPlayable(findGame(gameId))) return;
+    setPlays((current) => {
+      const prev = current[gameId] || { c: 0, t: 0 };
+      const next = { ...current, [gameId]: { c: prev.c + 1, t: Date.now() } };
+      writePlays(next);
+      return next;
+    });
     goHash(`#/game/${gameId}`);
   }
 
@@ -95,16 +168,9 @@ export default function App() {
         ) : (
           <>
             <h1 className="wb-site-title">WhiteBox</h1>
-            <div className="wb-grid">
-              {orderedGames.map((game) => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  playable={isPlayable(game)}
-                  onOpen={openGame}
-                />
-              ))}
-            </div>
+            <GameRow title="Continue Playing" list={continuePlaying} onOpen={openGame} />
+            <GameRow title="Trending" list={trending} onOpen={openGame} />
+            <GameRow title="Top Played" list={topPlayed} onOpen={openGame} />
           </>
         )}
       </main>
