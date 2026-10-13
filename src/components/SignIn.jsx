@@ -9,24 +9,19 @@ export default function SignIn() {
   const { status, profile, configured, onSignedIn, signOut } = useAuth();
   const [failed, setFailed] = useState(false);
   const slotRef = useRef(null);
-  // Google's button is rendered once per mount, so we have to tell it when the
-  // page theme flips — otherwise a white page keeps a black Google button.
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark');
 
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setTheme(document.documentElement.dataset.theme || 'dark');
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
-
+  // Deliberately NOT re-rendered when the page theme changes. Google's
+  // `outline` and `filled_black` buttons are not the same size — outline
+  // carries a 1px border, filled_black doesn't — so swapping between them
+  // shifts the logo by ~2px and changes the button height. Rendering once with
+  // a single theme keeps the button pixel-identical in both page themes, and
+  // avoids tearing the button down and rebuilding it on every toggle.
   useEffect(() => {
     if (!slotRef.current || !configured) return undefined;
     if (status !== AuthStatus.SIGNED_OUT && status !== AuthStatus.ERROR) return undefined;
 
     let cancelled = false;
-    renderGoogleButton(slotRef.current, { onProfile: onSignedIn, theme })
+    renderGoogleButton(slotRef.current, { onProfile: onSignedIn })
       .then((result) => {
         if (!cancelled && result?.error) setFailed(true);
       })
@@ -34,7 +29,7 @@ export default function SignIn() {
         if (!cancelled) setFailed(true);
       });
     return () => { cancelled = true; };
-  }, [status, configured, onSignedIn, theme]);
+  }, [status, configured, onSignedIn]);
 
   if (!configured) return null;
 
@@ -51,9 +46,7 @@ export default function SignIn() {
 
   return (
     <div className="wb-signin-row">
-      {/* Keyed on the theme: GIS sizes its iframe at creation, so a theme
-            change needs a brand-new container rather than a re-render. */}
-        <div className="wb-signin-slot" key={theme} ref={slotRef} />
+      <div className="wb-signin-slot" ref={slotRef} />
       {failed && <span className="wb-signin-note">Sign-in failed — try again.</span>}
     </div>
   );

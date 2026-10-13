@@ -83,16 +83,17 @@ export function isConfigured() {
  * Uses GIS's built-in One Tap / button UI rather than a custom Google-styled
  * button, which Google's branding guidelines require.
  *
- * Pass a NEW empty container on every call when re-rendering (see the keyed
- * slot in SignIn.jsx). GIS sizes its iframe on creation, so re-rendering into
- * a node that already holds a button leaves a zero-sized iframe.
+ * Call this once per mount into an empty container. GIS sizes its iframe when
+ * the button is created, so re-rendering into a node that already holds a
+ * button leaves a zero-sized iframe — which is why the caller deliberately
+ * does not re-render on theme changes.
  */
 // GIS must be initialized exactly once per page load. Re-initializing (which
 // happens naturally when the button re-renders on a theme change) logs
 // "initialize() is called multiple times" and drops the earlier callback.
 let gisInitialized = false;
 
-export async function renderGoogleButton(element, { onProfile, theme = 'dark' } = {}) {
+export async function renderGoogleButton(element, { onProfile } = {}) {
   if (!isConfigured()) throw new Error('auth_not_configured');
   const id = await loadGis();
 
@@ -126,10 +127,13 @@ export async function renderGoogleButton(element, { onProfile, theme = 'dark' } 
 
     id.renderButton(element, {
       type: 'standard',
-      // Caller supplies the theme rather than reading it here: this function
-      // runs once per mount, so reading the attribute directly would pin the
-      // button to whatever the theme was at first render.
-      theme: theme === 'light' ? 'outline' : 'filled_black',
+      // One theme, always — never swapped with the page theme. Google's
+      // `outline` and `filled_black` differ by a 1px border, which changes the
+      // button's inner size and moves the logo ~2px. Keeping it fixed means the
+      // button is pixel-identical before and after a light/dark toggle.
+      // `outline` is the right pick on both: it reads clearly on the black page
+      // and is the natural treatment on white.
+      theme: 'outline',
       size: 'medium',
       text: 'signin_with',
       shape: 'pill',
