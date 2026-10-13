@@ -7,7 +7,9 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: radial-gradient(#2e2e2e 1px, transparent 1.5px);
+  background-size: 24px 24px;
   color: var(--ink);
 }
 
