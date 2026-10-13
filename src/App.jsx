@@ -1,29 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { findGame, isPlayable, listGames } from './games/registry.js';
-import GameStage from './components/GameStage.jsx';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
 
-// --- hash routing -----------------------------------------------------------
-//   #/            library
-//   #/game/<id>   play a game (shareable link)
-// Every navigation writes the hash; a `hashchange` listener applies it back to
-// state. Browser back/forward and shared links work. Unknown routes fall home.
-
-function parseHash() {
-  const raw = window.location.hash.replace(/^#\/?/, '');
-  const slash = raw.indexOf('/');
-  if (slash === -1) return { head: raw, rest: '' };
-  return { head: raw.slice(0, slash), rest: raw.slice(slash + 1) };
-}
-
-// --- play tracking ----------------------------------------------------------
-// Local play history powers the Continue Playing and Top Played rows:
+// --- play history ------------------------------------------------------------
+// Historical play counts power the Top Played row:
 // { [gameId]: { c: open count, t: last-opened timestamp } }.
+// Nothing records new opens right now (there is no play screen), so this only
+// reads what earlier visits stored.
 const PLAYS_KEY = 'whitebox:plays';
 
 function readPlays() {
@@ -40,14 +28,6 @@ function readPlays() {
     return clean;
   } catch {
     return {};
-  }
-}
-
-function writePlays(value) {
-  try {
-    window.localStorage.setItem(PLAYS_KEY, JSON.stringify(value));
-  } catch {
-    // Private mode etc. — rows simply reset on reload.
   }
 }
 
@@ -105,8 +85,7 @@ function GameRow({ title, list, emptyHint, onOpen }) {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('browse');
-  const [plays, setPlays] = useState(readPlays);
+  const [plays] = useState(readPlays);
   // { [gameId]: savedAt } mirror of locally saved runs. Refreshed whenever
   // the library shows (a game may have saved on exit) and after sign-in pull.
   const [progressAt, setProgressAt] = useState(() => {
@@ -115,9 +94,6 @@ export default function App() {
   });
 
   const { isSignedIn, profile } = useAuth();
-
-  const activeGame = findGame(currentView);
-  const canPlay = isPlayable(activeGame);
 
   // Once per sign-in, merge the account's saved runs into this device (newer
   // copy wins per game) so progress follows the player across devices.
@@ -215,22 +191,16 @@ export default function App() {
   );
 
   const applyHash = useCallback(() => {
-    const { head, rest } = parseHash();
-    // Refresh saved-run keys on every navigation: the game just exited may
-    // have saved (or cleared, on restart) its snapshot on the way out.
+    // Refresh saved-run keys on every navigation, in case a game saved (or
+    // cleared) a snapshot on its way out.
     const progressMap = listLocalProgress();
     setProgressAt(Object.fromEntries(Object.entries(progressMap).map(([id, entry]) => [id, entry.at])));
-    if (head === 'game') {
-      const game = findGame(rest);
-      if (game && isPlayable(game)) {
-        setCurrentView(game.id);
-        return;
-      }
-    }
+
+    // There is no play screen right now, so a #/game/... link just falls back
+    // to the library.
     if (window.location.hash !== '#/' && window.location.hash !== '') {
       window.history.replaceState(null, '', '#/');
     }
-    setCurrentView('browse');
   }, []);
 
   useEffect(() => {
@@ -242,120 +212,83 @@ export default function App() {
     return () => window.removeEventListener('hashchange', applyHash);
   }, [applyHash]);
 
-  // Jump back to the top whenever the player moves to a different view.
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
-  }, [currentView]);
-
-  // Reflect the current view in the tab title.
-  useEffect(() => {
-    document.title = canPlay
-      ? `${activeGame.title} — WhiteBox`
-      : 'WhiteBox';
-  }, [canPlay, activeGame]);
-
-  const goHash = useCallback((hash) => {
-    if (window.location.hash === hash) applyHash();
-    else window.location.hash = hash;
-  }, [applyHash]);
-
-  function goHome() {
-    goHash('#/');
-  }
-
-  function openGame(gameId) {
-    if (!isPlayable(findGame(gameId))) return;
-    setPlays((current) => {
-      const prev = current[gameId] || { c: 0, t: 0 };
-      const next = { ...current, [gameId]: { c: prev.c + 1, t: Date.now() } };
-      writePlays(next);
-      return next;
-    });
-    goHash(`#/game/${gameId}`);
-  }
+  // The play screen has been removed, so opening a game is intentionally inert
+  // until the new play flow is decided. The capsules stay on the cards so the
+  // layout doesn't need redoing when it is.
+  function openGame() {}
 
   return (
     <div className="wb-shell">
       <main className="wb-main">
-        {canPlay ? (
-          <GameStage
-            key={activeGame.id}
-            game={activeGame}
-            onExit={goHome}
-          />
-        ) : (
-          <>
-            <header className="wb-header">
-              <h1 className="wb-brand">
-                <a href="#/">WhiteBox</a>
-              </h1>
-              <div className="wb-header-search">
-                <input
-                  type="search"
-                  className="wb-search"
-                  placeholder="Search games"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  aria-label="Search games"
-                />
-              </div>
-              <div className="wb-topbar">
-                <SignIn />
-                <ThemeToggle />
-              </div>
-            </header>
-            {continueList.length > 0 && (
-              <GameRow title="Continue Playing" list={continueList} emptyHint="" onOpen={openGame} />
-            )}
-            {(trendingList.length > 0 || !searching) && (
-              <GameRow title="Trending" list={trendingList} emptyHint="" onOpen={openGame} />
-            )}
-            {(topPlayedList.length > 0 || !searching) && (
-              <GameRow title="Top Played" list={topPlayedList} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
-            )}
-
-            <section className="wb-row">
-              <RowHead title="Browse All" count={browse.length} />
-
-              <div className="wb-chips-bar">
-                <div className="wb-chips" role="group" aria-label="Filter by category">
-                  <button
-                    type="button"
-                    className={`wb-chip${category === ALL_CATEGORIES ? ' is-on' : ''}`}
-                    onClick={() => setCategory(ALL_CATEGORIES)}
-                  >
-                    All
-                  </button>
-                  {categoryList.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      className={`wb-chip${category === c ? ' is-on' : ''}`}
-                      onClick={() => setCategory(c)}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {browse.length === 0 ? (
-                <p className="wb-row-empty">No games match “{query}”.</p>
-              ) : (
-                <div className="wb-grid">
-                  {browse.map((game) => (
-                    <GameCard
-                      key={game.id}
-                      game={game}
-                      playable={isPlayable(game)}
-                      onOpen={openGame}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          </>
+        <header className="wb-header">
+          <h1 className="wb-brand">
+            <a href="#/">WhiteBox</a>
+          </h1>
+          <div className="wb-header-search">
+            <input
+              type="search"
+              className="wb-search"
+              placeholder="Search games"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search games"
+            />
+          </div>
+          <div className="wb-topbar">
+            <SignIn />
+            <ThemeToggle />
+          </div>
+        </header>
+        {continueList.length > 0 && (
+          <GameRow title="Continue Playing" list={continueList} emptyHint="" onOpen={openGame} />
         )}
+        {(trendingList.length > 0 || !searching) && (
+          <GameRow title="Trending" list={trendingList} emptyHint="" onOpen={openGame} />
+        )}
+        {(topPlayedList.length > 0 || !searching) && (
+          <GameRow title="Top Played" list={topPlayedList} emptyHint="Play something and your most-played games will rank here." onOpen={openGame} />
+        )}
+
+        <section className="wb-row">
+          <RowHead title="Browse All" count={browse.length} />
+
+          <div className="wb-chips-bar">
+            <div className="wb-chips" role="group" aria-label="Filter by category">
+              <button
+                type="button"
+                className={`wb-chip${category === ALL_CATEGORIES ? ' is-on' : ''}`}
+                onClick={() => setCategory(ALL_CATEGORIES)}
+              >
+                All
+              </button>
+              {categoryList.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`wb-chip${category === c ? ' is-on' : ''}`}
+                  onClick={() => setCategory(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {browse.length === 0 ? (
+            <p className="wb-row-empty">No games match “{query}”.</p>
+          ) : (
+            <div className="wb-grid">
+              {browse.map((game) => (
+                <GameCard
+                  key={game.id}
+                  game={game}
+                  playable={isPlayable(game)}
+                  onOpen={openGame}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
