@@ -4,6 +4,7 @@ import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameStage from './components/GameStage.jsx';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
 
@@ -263,7 +264,10 @@ export default function App() {
         ) : (
           <>
             <h1 className="wb-site-title">WhiteBox</h1>
-            <SignIn />
+            <div className="wb-topbar">
+              <SignIn />
+              <ThemeToggle />
+            </div>
             {continuePlaying.length > 0 && (
               <GameRow title="Continue Playing" list={continuePlaying} emptyHint="" onOpen={openGame} />
             )}

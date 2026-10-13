@@ -24,7 +24,7 @@
   flex-direction: column;
   line-height: 1;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--hud);
   border: 1px solid var(--line);
 }
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -8,7 +8,7 @@
       name="description"
       content="WhiteBox is a browser-based home for quick games, curious challenges, and friendly competition."
     />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#0b0b0b" />
     <meta property="og:title" content="WhiteBox — Discover Your Next Favorite Game" />
     <meta
       property="og:description"
@@ -16,6 +16,23 @@
     />
     <meta property="og:type" content="website" />
     <title>WhiteBox — Discover Your Next Favorite Game</title>
+    <script>
+      // Apply the stored theme before the first paint. This must stay inline
+      // and ahead of the app bundle: any later and the page would paint once in
+      // the default theme and then flip, which reads as a flash.
+      (function () {
+        try {
+          var t = window.localStorage.getItem('whitebox:theme');
+          if (t !== 'light' && t !== 'dark') t = 'dark';
+          document.documentElement.dataset.theme = t;
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', t === 'dark' ? '#0b0b0b' : '#ffffff');
+        } catch (e) {
+          // Storage blocked — the html attribute above already holds the default.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
