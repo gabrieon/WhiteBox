@@ -51,6 +51,20 @@ function matchesText(game, q) {
     || game.description.toLowerCase().includes(q);
 }
 
+// "3h ago" — reuses the `now` captured at mount, so this stays a pure render.
+function relativeTime(ts, now) {
+  const mins = Math.round(Math.max(0, now - ts) / 60_000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  return `${Math.round(days / 30)}mo ago`;
+}
+
 // Row heading carries a count so each section reads as a real section rather
 // than a floating label.
 function RowHead({ title, count }) {
@@ -62,7 +76,7 @@ function RowHead({ title, count }) {
   );
 }
 
-function GameRow({ title, list, emptyHint, onOpen }) {
+function GameRow({ title, list, emptyHint, onOpen, getMeta }) {
   return (
     <section className="wb-row">
       <RowHead title={title} count={list.length} />
@@ -76,6 +90,7 @@ function GameRow({ title, list, emptyHint, onOpen }) {
               game={game}
               playable={isPlayable(game)}
               onOpen={onOpen}
+              meta={getMeta ? getMeta(game) : undefined}
             />
           ))}
         </div>
@@ -166,11 +181,19 @@ export default function App() {
       .map((x) => findGame(x.id))
       .filter((game) => game !== undefined);
 
-    // Only trust the data once there's enough of it to be a ranking. With one or
-    // two opens the derived list is noise, so fall back to the curated
-    // shortlist until it has substance.
-    if (ranked.length >= 3) return ranked;
-    return TRENDING_IDS.map((id) => findGame(id)).filter((game) => game !== undefined);
+    // Fewer than three opens is noise, not a ranking, so those get ignored in
+    // favour of the curated shortlist.
+    const picks = ranked.length >= 3 ? [...ranked] : [];
+
+    // Top the row up from the shortlist so it never runs dry — a visitor with a
+    // handful of plays still sees something worth clicking.
+    for (const id of TRENDING_IDS) {
+      if (picks.length >= 6) break;
+      const game = findGame(id);
+      if (game !== undefined && !picks.some((p) => p.id === game.id)) picks.push(game);
+    }
+
+    return picks;
   }, [plays, now]);
 
   // --- browse all ------------------------------------------------------------
@@ -219,24 +242,42 @@ export default function App() {
   // Most of the catalog is unbuilt, so let players hide it and see only the
   // games they can actually launch.
   const [playableOnly, setPlayableOnly] = useState(false);
+  const [sort, setSort] = useState('featured');
 
-  // Playable games first, then alphabetical — a real store's ordering.
+  const SORTS = [
+  { id: 'featured', label: 'Featured' },
+  { id: 'az', label: 'A–Z' },
+  { id: 'za', label: 'Z–A' },
+  { id: 'played', label: 'Most played' },
+];
+
+// Playable games first, then alphabetical — a real store's ordering.
   const browse = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return listGames()
-      .filter((game) => {
-        if (playableOnly && !isPlayable(game)) return false;
-        if (category !== ALL_CATEGORIES
-          && !(game.categories || []).includes(category)) return false;
-        return matchesText(game, q);
-      })
-      .sort((a, b) => {
-        const pa = isPlayable(a) ? 0 : 1;
-        const pb = isPlayable(b) ? 0 : 1;
-        if (pa !== pb) return pa - pb;
+    const filtered = listGames().filter((game) => {
+      if (playableOnly && !isPlayable(game)) return false;
+      if (category !== ALL_CATEGORIES
+        && !(game.categories || []).includes(category)) return false;
+      return matchesText(game, q);
+    });
+
+    if (sort === 'az') return filtered.sort((a, b) => a.title.localeCompare(b.title));
+    if (sort === 'za') return filtered.sort((a, b) => b.title.localeCompare(a.title));
+    if (sort === 'played') {
+      return filtered.sort((a, b) => {
+        const pa = plays[a.id]?.c || 0;
+        const pb = plays[b.id]?.c || 0;
+        if (pb !== pa) return pb - pa;
         return a.title.localeCompare(b.title);
       });
-  }, [query, category, playableOnly]);
+    }
+    return filtered.sort((a, b) => {
+      const pa = isPlayable(a) ? 0 : 1;
+      const pb = isPlayable(b) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      return a.title.localeCompare(b.title);
+    });
+  }, [query, category, playableOnly, sort, plays]);
 
   // Curated rows obey the search, and each game lands in at most ONE curated
   // row: the page used to show Reaction Test and Higher or Lower four times
@@ -258,6 +299,14 @@ export default function App() {
       topPlayed: take(topPlayed),
     };
   }, [continuePlaying, trending, topPlayed, query]);
+
+  // Most recent activity for a game: a saved mid-run snapshot counts as more
+  // recent than merely having opened it.
+  const playedAt = useCallback((gameId) => {
+    const opened = plays[gameId]?.t || 0;
+    const saved = progressAt[gameId] || 0;
+    return Math.max(opened, saved) || null;
+  }, [plays, progressAt]);
 
   const applyHash = useCallback(() => {
     // Refresh saved-run keys on every navigation, in case a game saved (or
@@ -331,7 +380,13 @@ export default function App() {
           </div>
         </header>
         {rows.continue.length > 0 && (
-          <GameRow title="Continue Playing" list={rows.continue} emptyHint="" onOpen={openGame} />
+          <GameRow
+            title="Continue Playing"
+            list={rows.continue}
+            emptyHint=""
+            onOpen={openGame}
+            getMeta={(g) => relativeTime(playedAt(g.id) ?? 0, now)}
+          />
         )}
         {rows.trending.length > 0 && (
           <GameRow title="Trending" list={rows.trending} emptyHint="" onOpen={openGame} />
@@ -382,6 +437,19 @@ export default function App() {
                 </button>
               ))}
             </div>
+            <label className="wb-sort">
+              <span className="wb-sort-label">Sort</span>
+              <select
+                className="wb-sort-select"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                aria-label="Sort games"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {browse.length === 0 ? (

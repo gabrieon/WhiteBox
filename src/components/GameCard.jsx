@@ -10,7 +10,7 @@ function metaLine(game) {
   return [...genres, mode].filter(Boolean).join(' · ');
 }
 
-export default function GameCard({ game, onOpen, playable }) {
+export default function GameCard({ game, onOpen, playable, meta }) {
   // One click handler for both entry points: the thumbnail and the Play
   // capsule. Catalog-only games stay inert and are marked "Soon".
   function open() {
@@ -43,7 +43,7 @@ export default function GameCard({ game, onOpen, playable }) {
         </button>
       </div>
 
-      <p className="wb-card-meta">{metaLine(game)}</p>
+      <p className="wb-card-meta">{meta || metaLine(game)}</p>
     </article>
   );
 }
