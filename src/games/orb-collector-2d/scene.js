@@ -16,12 +16,35 @@ export default class OrbDashScene extends Phaser.Scene {
     this.score = 0;
     this.timeLeft = 30;
     this.over = false;
+    this.abandoning = false;
+  }
+
+  readSavedRun() {
+    try {
+      const data = this.ctx?.loadProgress?.();
+      if (!data || typeof data !== 'object') return null;
+      const score = Math.max(0, Math.floor(Number(data.score) || 0));
+      const timeLeft = Math.floor(Number(data.timeLeft) || 0);
+      if (timeLeft < 1 || timeLeft > 300) return null;
+      return { score, timeLeft };
+    } catch {
+      return null;
+    }
   }
 
   create() {
     this.ctx = this.game.registry.get('ctx') || null;
     const cfg = this.ctx?.manifest?.config || {};
     this.timeLeft = cfg.rounds || 30;
+    this.abandoning = false;
+
+    // Resume a saved run when one exists; a restart clears it first (see
+    // restart() below), so reaching here with data means "continue".
+    const saved = this.readSavedRun();
+    if (saved) {
+      this.score = saved.score;
+      this.timeLeft = saved.timeLeft;
+    }
 
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor(cfg.phaser?.backgroundColor || '#101322');
@@ -63,6 +86,11 @@ export default class OrbDashScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       this.scale.off('resize', this.onResize, this);
       this.input.keyboard.off('keydown-R');
+      // Leaving mid-run (not a restart, not game over) snapshots the run so
+      // it can resume. Restart clears first, so its shutdown saves nothing.
+      if (!this.over && !this.abandoning) {
+        this.ctx?.saveProgress?.({ score: this.score, timeLeft: Math.ceil(this.timeLeft) });
+      }
     });
   }
 
@@ -99,6 +127,7 @@ export default class OrbDashScene extends Phaser.Scene {
     if (this.over) return;
     this.score += 1;
     this.ctx?.services?.audio?.play({ freq: 480 + this.score * 15, duration: 0.09, type: 'square', gain: 0.18 });
+    this.ctx?.saveProgress?.({ score: this.score, timeLeft: Math.ceil(this.timeLeft) });
     orb.destroy();
     this.spawnOrb();
     this.updateHud();
@@ -107,6 +136,7 @@ export default class OrbDashScene extends Phaser.Scene {
   onSecond() {
     if (this.over) return;
     this.timeLeft -= 1;
+    this.ctx?.saveProgress?.({ score: this.score, timeLeft: Math.ceil(this.timeLeft) });
     this.updateHud();
     if (this.timeLeft <= 0) this.gameOver();
   }
@@ -118,6 +148,8 @@ export default class OrbDashScene extends Phaser.Scene {
   gameOver() {
     this.over = true;
     this.physics.pause();
+    // Finished runs don't resume.
+    this.ctx?.clearProgress?.();
     const best = this.ctx?.services?.scores?.submit(this.score, 'high');
     const bestVal = this.ctx?.services?.scores?.getBest();
     const { width, height } = this.scale;
@@ -129,6 +161,10 @@ export default class OrbDashScene extends Phaser.Scene {
   }
 
   restart() {
+    // A restart abandons the run: clear the snapshot so the shutdown handler
+    // below (and the remount) cannot resurrect it.
+    this.abandoning = true;
+    this.ctx?.clearProgress?.();
     // Prefer a full host restart (fresh React state + services run id); fall
     // back to a scene restart if launched outside the host.
     if (this.ctx?.restart) this.ctx.restart();

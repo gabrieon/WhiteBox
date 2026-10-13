@@ -22,6 +22,11 @@ import './GameHost.css';
 import { GamePhase } from './lifecycle.js';
 import { createServices } from './services.js';
 import { GameContext } from './gameContext.js';
+import {
+  readLocalProgress,
+  writeLocalProgress,
+  clearLocalProgress,
+} from './auth/progress.js';
 
 // Lazy engine adapters — each statically imports its heavy library, so the
 // dynamic import here creates a separate chunk loaded only when needed.
@@ -106,6 +111,23 @@ export default function GameHost({ manifest, onExit }) {
     setPhase(GamePhase.ERROR);
   }, [services]);
 
+  // Mid-run snapshots. Synchronous localStorage only, so games can call these
+  // from anywhere (event handlers, frames) with zero latency. Pushing the
+  // snapshot to the account happens in GameStage on exit; merging from the
+  // account happens in App on sign-in. Games never see auth state.
+  const saveProgress = useCallback((data) => {
+    writeLocalProgress(manifest.id, data);
+  }, [manifest.id]);
+
+  const loadProgress = useCallback(() => {
+    const entry = readLocalProgress(manifest.id);
+    return entry ? entry.data : null;
+  }, [manifest.id]);
+
+  const clearProgress = useCallback(() => {
+    clearLocalProgress(manifest.id);
+  }, [manifest.id]);
+
   const ctx = useMemo(() => ({
     manifest,
     services,
@@ -116,8 +138,11 @@ export default function GameHost({ manifest, onExit }) {
     restart,
     reportResult,
     reportError,
+    saveProgress,
+    loadProgress,
+    clearProgress,
     onExit,
-  }), [manifest, services, phase, runId, result, restart, reportResult, reportError, onExit]);
+  }), [manifest, services, phase, runId, result, restart, reportResult, reportError, saveProgress, loadProgress, clearProgress, onExit]);
 
   // Resolve the React entry for react/r3f engines (static component or lazy loader).
   const Game = useMemo(() => {

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import GameHost from '../sdk/GameHost.jsx';
 import GameArt from './GameArt.jsx';
+import { useAuth } from '../sdk/auth/authContext.js';
+import { clearLocalProgress, pushProgress } from '../sdk/auth/progress.js';
 
 const INPUT_LABELS = {
   keyboard: 'Keyboard',
@@ -49,6 +51,13 @@ export default function GameStage({ game, onExit }) {
   // GameStage is keyed by game id (see App.jsx), so a fresh mount already
   // means a fresh session — no reset effect needed here.
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { isSignedIn } = useAuth();
+
+  // Mirrored for the unmount cleanup below, which must see the latest value.
+  const signedInRef = useRef(isSignedIn);
+  useEffect(() => {
+    signedInRef.current = isSignedIn;
+  }, [isSignedIn]);
 
   useEffect(() => {
     function onChange() {
@@ -58,9 +67,24 @@ export default function GameStage({ game, onExit }) {
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
+  // Leaving the game flushes the latest local snapshot to the account (when
+  // signed in). Games report continuously via ctx.saveProgress; this is the
+  // only network write per visit, and failures never block navigation.
+  useEffect(() => () => {
+    if (signedInRef.current) {
+      pushProgress(game.id).catch(() => {});
+    }
+  }, [game.id]);
+
   const restart = useCallback(() => {
+    // A restart abandons the run: clear the snapshot first so the remount
+    // cannot resurrect it, then mirror the deletion to the account.
+    clearLocalProgress(game.id);
+    if (signedInRef.current) {
+      pushProgress(game.id).catch(() => {});
+    }
     setRunId((n) => n + 1);
-  }, []);
+  }, [game.id]);
 
   const toggleFullscreen = useCallback(() => {
     const el = frameRef.current;

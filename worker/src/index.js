@@ -4,6 +4,11 @@
 //   GET  /health        -> liveness probe
 //   POST /rooms         -> mint a fresh room code (JSON { room })
 //   GET  /room/:code    -> upgrade to WebSocket, routed to the GameRoom DO
+//   POST /auth/google   -> exchange a Google ID token for a session cookie
+//   GET  /auth/session  -> current profile or { profile: null }
+//   POST /auth/logout   -> destroy the session
+//   GET  /v1/me/progress      -> saved per-game progress for the signed-in user
+//   PUT  /v1/me/progress      -> merge per-game progress ({ id: data|null })
 //
 // The Durable Object id is derived deterministically from the room code via
 // idFromName (Cloudflare hashes the name into a namespace-valid id), so any
@@ -13,6 +18,7 @@
 import { isRoomCode, generateRoomCode } from '../../shared/mp-protocol.js';
 import { GameRoom } from './GameRoom.js';
 import { verifyGoogleIdToken } from './google.js';
+import { readProgress, mergeProgress } from './progress.js';
 import {
   createSession,
   readSession,
@@ -38,7 +44,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 const BASE_CORS = {
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
 };
@@ -126,7 +132,7 @@ export default {
           { profile: publicProfile(record) },
           200,
           authCorsHeaders,
-          { 'Set-Cookie': sessionCookieHeader(request, id) },
+          { 'Set-Cookie': sessionCookieHeader(id) },
         );
       } catch (err) {
         const code = err?.message || 'invalid_token';
@@ -150,8 +156,45 @@ export default {
       }
       await destroySession(env, request);
       return json({ ok: true }, 200, authCorsHeaders, {
-        'Set-Cookie': clearedSessionCookieHeader(request),
+        'Set-Cookie': clearedSessionCookieHeader(),
       });
+    }
+
+    // ---- saved progress ----------------------------------------------------
+    // Per-game mid-run snapshots for signed-in users. Stored under a separate
+    // key from sessions (which expire); progress persists until overwritten or
+    // deleted. The server merges but never interprets game data.
+
+    // GET /v1/me/progress -> { progress: { [gameId]: { data, at } } }
+    if (url.pathname === '/v1/me/progress' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const found = await readSession(env, request);
+      if (!found) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const progress = await readProgress(env, found.record.googleSub);
+      return json({ progress }, 200, authCorsHeaders);
+    }
+
+    // PUT /v1/me/progress { progress: { [gameId]: data|null } }
+    // Merges into the stored map; null deletes an entry (finished runs).
+    if (url.pathname === '/v1/me/progress' && request.method === 'PUT') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const found = await readSession(env, request);
+      if (!found) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const body = await readJsonBody(request);
+      const incoming = body && typeof body === 'object' ? body.progress : undefined;
+      if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+        return json({ error: 'bad_request' }, 400, authCorsHeaders);
+      }
+      try {
+        const progress = await mergeProgress(env, found.record.googleSub, incoming);
+        return json({ progress }, 200, authCorsHeaders);
+      } catch (err) {
+        return json({ error: err?.message || 'invalid_progress' }, 400, authCorsHeaders);
+      }
     }
 
     // ---- multiplayer -----------------------------------------------------

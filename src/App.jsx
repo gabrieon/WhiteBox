@@ -3,6 +3,9 @@ import './App.css';
 import { findGame, isPlayable } from './games/registry.js';
 import GameStage from './components/GameStage.jsx';
 import GameCard from './components/GameCard.jsx';
+import SignIn from './components/SignIn.jsx';
+import { useAuth } from './sdk/auth/authContext.js';
+import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
 
 // --- hash routing -----------------------------------------------------------
 //   #/            library
@@ -82,15 +85,51 @@ function GameRow({ title, list, emptyHint, onOpen }) {
 export default function App() {
   const [currentView, setCurrentView] = useState('browse');
   const [plays, setPlays] = useState(readPlays);
+  // { [gameId]: savedAt } mirror of locally saved runs. Refreshed whenever
+  // the library shows (a game may have saved on exit) and after sign-in pull.
+  const [progressAt, setProgressAt] = useState(() => {
+    const map = listLocalProgress();
+    return Object.fromEntries(Object.entries(map).map(([id, entry]) => [id, entry.at]));
+  });
+
+  const { isSignedIn, profile } = useAuth();
 
   const activeGame = findGame(currentView);
   const canPlay = isPlayable(activeGame);
 
-  const continuePlaying = useMemo(() => Object.entries(plays)
-    .sort((a, b) => b[1].t - a[1].t)
-    .map(([id]) => findGame(id))
-    .filter((game) => game !== undefined)
-    .slice(0, 6), [plays]);
+  // Once per sign-in, merge the account's saved runs into this device (newer
+  // copy wins per game) so progress follows the player across devices.
+  const profileId = profile?.id || null;
+  useEffect(() => {
+    if (!isSignedIn || !profileId) return undefined;
+    let alive = true;
+    pullProgress()
+      .then(() => {
+        if (!alive) return;
+        const map = listLocalProgress();
+        setProgressAt(Object.fromEntries(Object.entries(map).map(([id, entry]) => [id, entry.at])));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [isSignedIn, profileId]);
+
+  // Continue Playing = anything with a recent open OR a saved snapshot,
+  // ordered by most recent activity. Saved runs (mid-game state) sort by
+  // when they were saved; plain opens sort by when they happened.
+  const continuePlaying = useMemo(() => {
+    const activity = new Map();
+    for (const [id, entry] of Object.entries(plays)) {
+      activity.set(id, Math.max(activity.get(id) || 0, entry.t));
+    }
+    for (const [id, at] of Object.entries(progressAt)) {
+      activity.set(id, Math.max(activity.get(id) || 0, at));
+    }
+    return [...activity.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => findGame(id))
+      .filter((game) => game !== undefined)
+      .slice(0, 6);
+  }, [plays, progressAt]);
 
   const topPlayed = useMemo(() => Object.entries(plays)
     .filter(([, entry]) => entry.c > 0)
@@ -105,6 +144,10 @@ export default function App() {
 
   const applyHash = useCallback(() => {
     const { head, rest } = parseHash();
+    // Refresh saved-run keys on every navigation: the game just exited may
+    // have saved (or cleared, on restart) its snapshot on the way out.
+    const progressMap = listLocalProgress();
+    setProgressAt(Object.fromEntries(Object.entries(progressMap).map(([id, entry]) => [id, entry.at])));
     if (head === 'game') {
       const game = findGame(rest);
       if (game && isPlayable(game)) {
@@ -171,7 +214,10 @@ export default function App() {
         ) : (
           <>
             <h1 className="wb-site-title">WhiteBox</h1>
-            <GameRow title="Continue Playing" list={continuePlaying} emptyHint="Games you open will show up here." onOpen={openGame} />
+            <SignIn />
+            {continuePlaying.length > 0 && (
+              <GameRow title="Continue Playing" list={continuePlaying} emptyHint="" onOpen={openGame} />
+            )}
             <GameRow title="Trending" list={trending} emptyHint="" onOpen={openGame} />
             <GameRow title="Top Played" list={topPlayed} emptyHint="Your most-played games will show up here." onOpen={openGame} />
           </>

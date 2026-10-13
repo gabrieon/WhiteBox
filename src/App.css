@@ -8,7 +8,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #cfe6ff;
+  background-color: #ffffff;
   background-image:
     repeating-linear-gradient(0deg, transparent 0 28px, rgba(216, 167, 192, 0.55) 28px 30px),
     repeating-linear-gradient(90deg, transparent 0 28px, rgba(216, 167, 192, 0.55) 28px 30px);
@@ -36,6 +36,48 @@
 .wb-site-title::after {
   content: ".";
   color: var(--red);
+}
+
+/* Minimal sign-in row: right-aligned muted text, out of the way. */
+.wb-signin-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: -32px 0 48px;
+  min-height: 24px;
+}
+
+.wb-signin-slot {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.wb-signin-name {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wb-signin-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.wb-signin-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.wb-signin-note {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 /* ---------- game rows ---------- */

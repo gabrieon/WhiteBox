@@ -1,9 +1,8 @@
 :root {
   color-scheme: light;
 
-  /* Cartoon theme: warm cream paper, inky outlines, ketchup-red + sunny
-     yellow accents. Thumbnails and game interiors keep their own colors. */
-  --paper: #cfe6ff;
+  /* Plain white background, black text. Stark, minimal, easy on eyes. */
+  --paper: #ffffff;
   --ink: #191919;
   --muted: #6f6a5e;
   --line: #191919;

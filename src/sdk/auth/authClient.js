@@ -57,7 +57,7 @@ function loadGis() {
   return sdkPromise;
 }
 
-async function authFetch(path, init = {}) {
+export async function apiFetch(path, init = {}) {
   const res = await fetch(`${apiBase()}${path}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ export async function renderGoogleButton(element, { onProfile } = {}) {
           return;
         }
         try {
-          const data = await authFetch('/auth/google', {
+          const data = await apiFetch('/auth/google', {
             method: 'POST',
             body: JSON.stringify({ idToken: response.credential }),
           });
@@ -125,9 +125,9 @@ export async function renderGoogleButton(element, { onProfile } = {}) {
 }
 
 export function getSession() {
-  return authFetch('/auth/session');
+  return apiFetch('/auth/session');
 }
 
 export function signOut() {
-  return authFetch('/auth/logout', { method: 'POST' });
+  return apiFetch('/auth/logout', { method: 'POST' });
 }

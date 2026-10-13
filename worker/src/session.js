@@ -57,11 +57,11 @@ export function readSessionId(request) {
   return typeof id === 'string' && id ? id : null;
 }
 
-export function sessionCookieHeader(request, sessionId) {
+export function sessionCookieHeader(sessionId) {
   return cookieHeader(sessionId, { maxAge: SESSION_TTL_SEC });
 }
 
-export function clearedSessionCookieHeader(request) {
+export function clearedSessionCookieHeader() {
   return cookieHeader('', { maxAge: 0 });
 }
 

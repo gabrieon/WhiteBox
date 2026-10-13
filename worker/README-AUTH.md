@@ -25,8 +25,11 @@ published keys before reading a single claim.
 
 **The browser never holds a usable credential.** The ID token is exchanged once
 and thrown away. What persists is a 256-bit random session id in an
-`HttpOnly` cookie, so an XSS bug cannot exfiltrate a working credential —
-`document.cookie` cannot see it at all.
+`HttpOnly` `SameSite=None; Secure` cookie — `None` is required because the
+frontend and the Worker are different origins in every environment
+(`rarelyknown.in` vs `workers.dev` in prod, `localhost:5173` vs
+`127.0.0.1:8787` in dev), and `Lax` cookies are never sent on cross-site
+fetch/WebSocket requests, so login would silently never work otherwise.
 
 **The algorithm is pinned to RS256.** Without this check an attacker can set
 `alg: none`, or sign with HS256 using Google's *public* key as the HMAC secret.
@@ -88,7 +91,14 @@ npm run test:auth
 Generates a real RSA key pair and runs the Worker's exact verification code
 against 8 cases, including a forged signature and an `alg: none` token.
 
-## Adding the player's name to multiplayer
+## Saved progress (mid-run resume)
+
+Signed-in players resume where they left: games report snapshots with
+`ctx.saveProgress(data)` and read them back with `ctx.loadProgress()` (both
+synchronous localStorage). Leaving a game flushes the snapshot to
+`PUT /v1/me/progress`; signing in pulls the server copy into the device
+(newer wins per game). Restarting or finishing a run deletes its snapshot.
+Supported so far: Higher or Lower (solo), Orb Arena, Orb Dash 2D.
 
 The session is available anywhere via `useAuth()`. To show real names in
 Orb Arena Online instead of the anonymous generated ones, have the room read

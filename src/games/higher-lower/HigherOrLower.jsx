@@ -79,6 +79,66 @@ function freshMatch() {
   };
 }
 
+// --- saved runs -------------------------------------------------------------
+// Solo runs persist (locally always, on the account when signed in) so leaving
+// mid-game and coming back resumes the exact position. Decks serialize as
+// labels and rehydrate against the current card pool; anything unrecognized
+// discards the save instead of crashing.
+
+function serializeSnapshot(snap) {
+  return {
+    card: snap.card.label,
+    deck: snap.deck.map((c) => c.label),
+    score: snap.score,
+    turn: snap.turn,
+    round: snap.round,
+    winner: snap.winner,
+    lastReveal: snap.lastReveal ? {
+      guess: snap.lastReveal.guess,
+      correct: snap.lastReveal.correct,
+      revealed: snap.lastReveal.revealed.label,
+      previous: snap.lastReveal.previous.label,
+      by: snap.lastReveal.by,
+    } : null,
+  };
+}
+
+function deserializeSnapshot(data) {
+  try {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+    const byLabel = (label) => COMPARISON_CARDS.find((c) => c.label === label) || null;
+    const deck = Array.isArray(data.deck) ? data.deck.map(byLabel) : [];
+    const card = byLabel(data.card);
+    if (!card || deck.length === 0 || deck.some((c) => !c)) return null;
+    if (!Array.isArray(data.score) || data.score.length !== 2) return null;
+    if (data.winner !== null) return null;
+    let lastReveal = null;
+    if (data.lastReveal) {
+      const revealed = byLabel(data.lastReveal.revealed);
+      const previous = byLabel(data.lastReveal.previous);
+      if (!revealed || !previous) return null;
+      lastReveal = {
+        guess: data.lastReveal.guess === 'lower' ? 'lower' : 'higher',
+        correct: Boolean(data.lastReveal.correct),
+        revealed,
+        previous,
+        by: data.lastReveal.by === 1 ? 1 : 0,
+      };
+    }
+    return {
+      card,
+      deck,
+      score: data.score.map((n) => Math.max(0, Math.floor(Number(n) || 0))),
+      turn: data.turn === 1 ? 1 : 0,
+      round: Math.max(0, Math.floor(Number(data.round) || 0)),
+      winner: null,
+      lastReveal,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // --- UI ---------------------------------------------------------------------
 
 function ScoreRow({ label, score, active, keys }) {
@@ -92,11 +152,12 @@ function ScoreRow({ label, score, active, keys }) {
 }
 
 export default function HigherOrLower() {
-  const { services, restart, reportResult } = useGame();
+  const { services, restart, reportResult, saveProgress, loadProgress, clearProgress } = useGame();
 
   const [mode, setMode] = useState('menu'); // menu | solo | duel
   const [role, setRole] = useState(null); // MatchRole.HOST | MatchRole.GUEST
   const [snapshot, setSnapshot] = useState(freshMatch);
+  const [savedRun, setSavedRun] = useState(() => deserializeSnapshot(loadProgress()));
   const [room, setRoom] = useState('');
   const [roomInput, setRoomInput] = useState('');
   const [status, setStatus] = useState(MatchStatus.IDLE);
@@ -130,9 +191,10 @@ export default function HigherOrLower() {
   useEffect(() => {
     if (snapshot.winner !== null) {
       services.audio.play({ freq: 900, duration: 0.3, type: 'sine', gain: 0.16 });
+      if (mode === 'solo') clearProgress();
       reportResult({ winner: snapshot.winner === 0 ? 'You' : snapshot.winner === 1 ? 'Rival' : 'Draw', score: snapshot.score });
     }
-  }, [snapshot.winner, snapshot.score, services, reportResult]);
+  }, [snapshot.winner, snapshot.score, services, reportResult, mode, clearProgress]);
 
   useEffect(() => () => { matchRef.current?.close(); matchRef.current = null; }, []);
 
@@ -141,7 +203,19 @@ export default function HigherOrLower() {
   function startSolo() {
     setMode('solo');
     setRole(null);
+    clearProgress();
     setSnapshot(freshMatch());
+  }
+
+  function resumeSolo() {
+    const saved = deserializeSnapshot(loadProgress());
+    if (!saved) {
+      setSavedRun(null);
+      return;
+    }
+    setMode('solo');
+    setRole(null);
+    setSnapshot(saved);
   }
 
   function soloGuess(guess) {
@@ -158,6 +232,9 @@ export default function HigherOrLower() {
     const afterCpu = applyGuess(afterYou, cpuGuess());
     announce(afterCpu);
     setSnapshot(afterCpu);
+    // Persist every completed round so leaving mid-game resumes exactly here.
+    // Duels never save: the run belongs to a live opponent, not this device.
+    if (afterCpu.winner === null) saveProgress(serializeSnapshot(afterCpu));
   }
 
   // --- duel ---------------------------------------------------------------
@@ -324,8 +401,13 @@ export default function HigherOrLower() {
           </p>
 
           <div className="hl-menu-actions">
-            <button type="button" className="hl-btn hl-btn-primary" onClick={startSolo}>
-              Play vs CPU
+            {savedRun && (
+              <button type="button" className="hl-btn hl-btn-primary" onClick={resumeSolo}>
+                Resume — You {savedRun.score[0]} · CPU {savedRun.score[1]}
+              </button>
+            )}
+            <button type="button" className="hl-btn" onClick={startSolo}>
+              {savedRun ? 'New game vs CPU' : 'Play vs CPU'}
             </button>
           </div>
 
@@ -430,11 +512,11 @@ export default function HigherOrLower() {
             </p>
 
             <div className="hl-footer">
-              <button type="button" className="hl-btn hl-btn-ghost" onClick={mode === 'duel' ? leaveDuel : () => { setMode('menu'); setSnapshot(freshMatch()); }}>
+              <button type="button" className="hl-btn hl-btn-ghost" onClick={mode === 'duel' ? leaveDuel : () => { setMode('menu'); setSnapshot(freshMatch()); setSavedRun(deserializeSnapshot(loadProgress())); }}>
                 {mode === 'duel' ? 'Leave room' : 'Change mode'}
               </button>
               {mode === 'solo' && (
-                <button type="button" className="hl-btn hl-btn-ghost" onClick={restart}>New game</button>
+                <button type="button" className="hl-btn hl-btn-ghost" onClick={() => { clearProgress(); setSavedRun(null); restart(); }}>New game</button>
               )}
             </div>
           </div>

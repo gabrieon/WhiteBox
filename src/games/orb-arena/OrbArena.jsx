@@ -97,12 +97,27 @@ function Arena() {
   );
 }
 
+function readArenaProgress(loadProgress) {
+  try {
+    const data = loadProgress();
+    if (!data || typeof data !== 'object') return null;
+    const collected = Array.isArray(data.collected)
+      ? data.collected.filter((i) => Number.isInteger(i) && i >= 0 && i < ORB_SPOTS.length)
+      : [];
+    const elapsed = Number.isFinite(data.elapsed) && data.elapsed >= 0 ? data.elapsed : 0;
+    return { collected, elapsed };
+  } catch {
+    return null;
+  }
+}
+
 export default function OrbArena() {
-  const { services, restart, reportResult } = useGame();
+  const { services, restart, reportResult, saveProgress, loadProgress, clearProgress } = useGame();
   const bodyRef = useRef();
   const noseRef = useRef();
-  const [collected, setCollected] = useState(() => new Set());
-  const [elapsed, setElapsed] = useState(0);
+  const [initial] = useState(() => readArenaProgress(loadProgress) || { collected: [], elapsed: 0 });
+  const [collected, setCollected] = useState(() => new Set(initial.collected));
+  const [elapsed, setElapsed] = useState(initial.elapsed);
   const [won, setWon] = useState(false);
   const [paused, setPaused] = useState(false);
   const startRef = useRef(0);
@@ -113,7 +128,7 @@ export default function OrbArena() {
   // Ref is the synchronous source of truth for which orbs are collected; the
   // `collected` state mirrors it for rendering. A ref avoids stale-closure bugs
   // if several orbs are collected within the same frame.
-  const collectedRef = useRef(new Set());
+  const collectedRef = useRef(new Set(initial.collected));
 
   const { yaw, onGroundEnter, onGroundExit } = usePlayerController({
     bodyRef,
@@ -123,9 +138,10 @@ export default function OrbArena() {
     pointerLock: true,
   });
 
-  // Start the clock on mount. The host remounts this component on every restart
-  // (key = runId), so a fresh mount always means a fresh run.
-  useEffect(() => { startRef.current = nowMs(); }, []);
+  // Start the clock on mount, continuing from a resumed run. The host remounts
+  // this component on every restart (key = runId), so a fresh mount with no
+  // saved progress always means a fresh run.
+  useEffect(() => { startRef.current = nowMs() - initial.elapsed * 1000; }, [initial.elapsed]);
 
   // Called from a physics intersection event (not during render), so state
   // updates and side effects here are safe and fire exactly once per orb.
@@ -135,11 +151,17 @@ export default function OrbArena() {
     const size = collectedRef.current.size;
     setCollected(new Set(collectedRef.current));
     services.audio.play({ freq: 520 + size * 40, duration: 0.12, type: 'triangle', gain: 0.25 });
+    // Persist every pickup so leaving mid-run resumes with these orbs gone.
+    saveProgress({
+      collected: [...collectedRef.current],
+      elapsed: (nowMs() - startRef.current) / 1000,
+    });
     if (size === total) {
       const timeMs = Math.round(nowMs() - startRef.current);
       services.scores.submit(timeMs, 'low');
       services.audio.play({ freq: 880, duration: 0.4, type: 'sawtooth', gain: 0.2 });
       setWon(true);
+      clearProgress();
       if (typeof document !== 'undefined' && document.exitPointerLock) document.exitPointerLock();
       reportResult({ win: true, timeMs, orbs: total });
     }
@@ -226,7 +248,7 @@ export default function OrbArena() {
                 {won && <p className="oa-panel-stat">All {total} orbs in <strong>{elapsed.toFixed(1)}s</strong></p>}
                 {won && best !== null && <p className="oa-panel-sub">Best: {(best / 1000).toFixed(1)}s</p>}
                 <div className="oa-panel-actions">
-                  <button type="button" className="oa-btn oa-btn-primary" onClick={restart}>Restart</button>
+                  <button type="button" className="oa-btn oa-btn-primary" onClick={() => { clearProgress(); restart(); }}>Restart</button>
                   {paused && !won && <button type="button" className="oa-btn" onClick={togglePause}>Resume</button>}
                 </div>
               </div>
