@@ -1,21 +1,23 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --paper: #000000;
-  --ink: #ffffff;
-  --muted: #888888;
-  --line: #222222;
-  --surface: #0a0a0a;
-  /* Kept for game interiors, which keep their own look. Site chrome no
-     longer uses it. */
-  --red: #ff2222;
-  --red-hover: #ff4444;
-  --red-pressed: #dd1111;
+  /* Cartoon theme: warm cream paper, inky outlines, ketchup-red + sunny
+     yellow accents. Thumbnails and game interiors keep their own colors. */
+  --paper: #FFF6E9;
+  --ink: #191919;
+  --muted: #6f6a5e;
+  --line: #191919;
+  --surface: #ffffff;
+  --red: #ff3b30;
+  --red-hover: #ff5a52;
+  --red-pressed: #d62f28;
   --on-red: #ffffff;
+  --yellow: #ffc93c;
+  --on-yellow: #191919;
 
-  --font-display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-hand: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-display: 'Arial Rounded MT Bold', 'Helvetica Rounded', 'Segoe UI', Arial, sans-serif;
+  --font-body: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-hand: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
   color: var(--ink);
   background: var(--paper);
@@ -51,11 +53,11 @@ input {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 3px solid var(--red);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--yellow);
+  color: var(--ink);
 }
