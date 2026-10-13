@@ -121,10 +121,13 @@
   transform: scale(0.94);
 }
 
+/* The Google button lives in an iframe that reports zero height until it has
+   painted, so the slot needs an explicit floor or it collapses to nothing.
+   36px matches GIS "small" and lines up with the theme toggle. */
 .wb-signin-slot {
   display: flex;
   align-items: center;
-  min-height: 32px;
+  min-height: 36px;
 }
 
 .wb-signin-name {

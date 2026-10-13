@@ -9,13 +9,24 @@ export default function SignIn() {
   const { status, profile, configured, onSignedIn, signOut } = useAuth();
   const [failed, setFailed] = useState(false);
   const slotRef = useRef(null);
+  // Google's button is rendered once per mount, so we have to tell it when the
+  // page theme flips — otherwise a white page keeps a black Google button.
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark');
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.dataset.theme || 'dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!slotRef.current || !configured) return undefined;
     if (status !== AuthStatus.SIGNED_OUT && status !== AuthStatus.ERROR) return undefined;
 
     let cancelled = false;
-    renderGoogleButton(slotRef.current, { onProfile: onSignedIn })
+    renderGoogleButton(slotRef.current, { onProfile: onSignedIn, theme })
       .then((result) => {
         if (!cancelled && result?.error) setFailed(true);
       })
@@ -23,7 +34,7 @@ export default function SignIn() {
         if (!cancelled) setFailed(true);
       });
     return () => { cancelled = true; };
-  }, [status, configured, onSignedIn]);
+  }, [status, configured, onSignedIn, theme]);
 
   if (!configured) return null;
 
@@ -40,7 +51,9 @@ export default function SignIn() {
 
   return (
     <div className="wb-signin-row">
-      <div className="wb-signin-slot" ref={slotRef} />
+      {/* Keyed on the theme: GIS sizes its iframe at creation, so a theme
+            change needs a brand-new container rather than a re-render. */}
+        <div className="wb-signin-slot" key={theme} ref={slotRef} />
       {failed && <span className="wb-signin-note">Sign-in failed — try again.</span>}
     </div>
   );
