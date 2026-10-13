@@ -17,6 +17,18 @@
     <meta property="og:type" content="website" />
     <title>WhiteBox — Discover Your Next Favorite Game</title>
     <script>
+      // Force HTTPS before anything else runs. The Worker also issues a 301,
+      // but a cached edge response can be served without the Worker running,
+      // and Google's OAuth compares the exact JavaScript origin — so a page
+      // left on http://rarelyknown.in fails sign-in with `origin_mismatch`.
+      (function () {
+        if (location.protocol !== 'http:') return;
+        location.replace(
+          'https://' + location.host + location.pathname + location.search + location.hash
+        );
+      })();
+    </script>
+    <script>
       // Apply the stored theme before the first paint. This must stay inline
       // and ahead of the app bundle: any later and the page would paint once in
       // the default theme and then flip, which reads as a flash.
