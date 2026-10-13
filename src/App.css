@@ -13,7 +13,9 @@
 }
 
 .wb-main {
-  width: min(100%, 1200px);
+  /* 1440 rather than 1200: on a 1920px screen the old cap stranded ~360px of
+     blank margin on each side. */
+  width: min(100%, 1440px);
   margin: 0 auto;
   padding: 48px 24px 80px;
   min-width: 0;
@@ -317,10 +319,13 @@
   color: var(--paper);
 }
 
+/* Columns are derived from the width actually available instead of being
+   fixed at three, so a wide monitor gets more games per row rather than more
+   empty margin. 3 columns at ~1000px, 4 at ~1200px, 5 at ~1450px. */
 .wb-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 40px 28px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 40px 24px;
 }
 
 .wb-card {
@@ -546,8 +551,8 @@
     grid-area: actions;
   }
 
+  /* Column count is handled by auto-fill; only the gutters tighten here. */
   .wb-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 28px 14px;
   }
 
