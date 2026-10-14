@@ -1,15 +1,103 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import {
   getSession,
   signOut as apiSignOut,
   isConfigured,
 } from './authClient.js';
+import { setClerkToken } from './clerkToken.js';
 import { AuthContext, AuthStatus } from './authContext.js';
 
 // Session state is shared across the app: the header shows the account menu,
 // games can show the player's name, and nothing should fetch the session twice.
+//
+// Two implementations behind one context. Clerk owns the session when a
+// publishable key is configured; otherwise the original Google + cookie flow
+// runs unchanged. Separate components rather than a conditional hook, because
+// useAuth() throws when there is no ClerkProvider above it.
 
-export function AuthProvider({ children }) {
+function clerkProfile(user) {
+  if (!user) return null;
+  const emailAddress = user.primaryEmailAddress?.emailAddress
+    || user.emailAddresses?.[0]?.emailAddress
+    || null;
+  return {
+    id: user.id,
+    name: user.fullName || user.username || null,
+    email: emailAddress,
+    emailVerified: Boolean(user.emailAddresses?.[0]?.verification?.status === 'verified'),
+    picture: user.imageUrl || null,
+    createdAt: user.createdAt ? new Date(user.createdAt).getTime() : null,
+  };
+}
+
+function ClerkAuthProvider({ children }) {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  const { signOut: clerkSignOut } = useClerk();
+
+  // Keep a current token available to apiFetch. Refreshed well inside Clerk's
+  // expiry so a long play session never sends a token that lapses mid-request.
+  useEffect(() => {
+    if (!isLoaded) return undefined;
+
+    if (!isSignedIn) {
+      setClerkToken(null);
+      return undefined;
+    }
+
+    let alive = true;
+    let timer = null;
+
+    async function publish() {
+      try {
+        const token = await getToken();
+        if (!alive) return;
+        setClerkToken(token);
+      } catch {
+        if (!alive) return;
+        setClerkToken(null);
+      }
+      if (alive) timer = setTimeout(publish, 60_000);
+    }
+
+    publish();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+      setClerkToken(null);
+    };
+  }, [isLoaded, isSignedIn, getToken]);
+
+  const signOut = useCallback(async () => {
+    try {
+      await clerkSignOut();
+    } finally {
+      setClerkToken(null);
+    }
+  }, [clerkSignOut]);
+
+  const value = useMemo(() => {
+    let status = AuthStatus.SIGNED_OUT;
+    if (!isLoaded) status = AuthStatus.LOADING;
+    else if (isSignedIn) status = AuthStatus.SIGNED_IN;
+
+    return {
+      status,
+      profile: status === AuthStatus.SIGNED_IN ? clerkProfile(user) : null,
+      error: null,
+      configured: true,
+      isSignedIn: status === AuthStatus.SIGNED_IN,
+      // Clerk signs in through its own modal; nothing to hand back here.
+      onSignedIn: () => {},
+      signOut,
+    };
+  }, [isLoaded, isSignedIn, user, signOut]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function LegacyAuthProvider({ children }) {
   const [status, setStatus] = useState(
     isConfigured() ? AuthStatus.LOADING : AuthStatus.UNAVAILABLE,
   );
@@ -71,4 +159,11 @@ export function AuthProvider({ children }) {
   }), [status, profile, error, onSignedIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function AuthProvider({ mode = 'legacy', children }) {
+  if (mode === 'clerk') {
+    return <ClerkAuthProvider>{children}</ClerkAuthProvider>;
+  }
+  return <LegacyAuthProvider>{children}</LegacyAuthProvider>;
 }

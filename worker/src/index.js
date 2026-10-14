@@ -19,6 +19,26 @@ import { isRoomCode, generateRoomCode } from '../../shared/mp-protocol.js';
 import { GameRoom } from './GameRoom.js';
 import { verifyGoogleIdToken } from './google.js';
 import { readProgress, mergeProgress } from './progress.js';
+import { verifyClerkToken, bearerToken } from './clerk.js';
+
+/**
+ * Resolve the caller's stable user id from whichever auth mode is live:
+ * a Clerk session token (`Authorization: Bearer …`) or the legacy cookie
+ * session. Returns null when neither verifies.
+ */
+async function resolveUserId(env, request) {
+  const token = bearerToken(request);
+  if (token) {
+    try {
+      const { clerkUserId } = await verifyClerkToken(token, { issuer: env.CLERK_ISSUER });
+      return clerkUserId;
+    } catch {
+      return null;
+    }
+  }
+  const found = await readSession(env, request);
+  return found ? found.record.googleSub : null;
+}
 import {
   createSession,
   readSession,
@@ -178,9 +198,9 @@ export default {
       if (!authCorsHeaders) {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
-      const found = await readSession(env, request);
-      if (!found) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
-      const progress = await readProgress(env, found.record.googleSub);
+      const userId = await resolveUserId(env, request);
+      if (!userId) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const progress = await readProgress(env, userId);
       return json({ progress }, 200, authCorsHeaders);
     }
 
@@ -190,15 +210,15 @@ export default {
       if (!authCorsHeaders) {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
-      const found = await readSession(env, request);
-      if (!found) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const userId = await resolveUserId(env, request);
+      if (!userId) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
       const body = await readJsonBody(request);
       const incoming = body && typeof body === 'object' ? body.progress : undefined;
       if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
         return json({ error: 'bad_request' }, 400, authCorsHeaders);
       }
       try {
-        const progress = await mergeProgress(env, found.record.googleSub, incoming);
+        const progress = await mergeProgress(env, userId, incoming);
         return json({ progress }, 200, authCorsHeaders);
       } catch (err) {
         return json({ error: err?.message || 'invalid_progress' }, 400, authCorsHeaders);

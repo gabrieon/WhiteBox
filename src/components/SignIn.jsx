@@ -1,11 +1,43 @@
 import { useEffect, useRef, useState } from 'react';
+import { SignInButton, UserButton } from '@clerk/clerk-react';
 import { useAuth, AuthStatus } from '../sdk/auth/authContext.js';
 import { renderGoogleButton } from '../sdk/auth/authClient.js';
 
-// Minimal sign-in row for the library: Google's own button when signed out,
-// name + sign out when signed in. Nothing else — the library stays a black
-// screen with a title and game rows.
-export default function SignIn() {
+// Account control in the header. Two implementations:
+//
+//   Clerk  — one flat capsule that opens Clerk's modal, which lists every
+//            provider you enabled (Google, Apple, GitHub, email link, ...).
+//            Clerk renders the buttons, so they are brand-compliant and don't
+//            bring Google's iframe background problem with them.
+//   Google — the original single-provider path, kept as the fallback so the
+//            site still signs in if the Clerk key is removed.
+
+function ClerkAccount() {
+  const { profile, isSignedIn } = useAuth();
+
+  if (!isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <button type="button" className="wb-signin-btn">Sign in</button>
+      </SignInButton>
+    );
+  }
+
+  return (
+    <div className="wb-signin-row">
+      <UserButton
+        appearance={{
+          elements: {
+            avatarBox: 'wb-clerk-avatar',
+          },
+        }}
+      />
+      <span className="wb-signin-name">{profile?.name || 'Player'}</span>
+    </div>
+  );
+}
+
+function GoogleAccount() {
   const { status, profile, configured, onSignedIn, signOut } = useAuth();
   const [error, setError] = useState('');
   const slotRef = useRef(null);
@@ -62,4 +94,8 @@ export default function SignIn() {
       )}
     </div>
   );
+}
+
+export default function SignIn({ mode = 'legacy' }) {
+  return mode === 'clerk' ? <ClerkAccount /> : <GoogleAccount />;
 }

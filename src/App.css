@@ -166,6 +166,36 @@
   text-decoration: underline;
 }
 
+/* Clerk sign-in trigger. Styled as a capsule so it matches the header's other
+   controls; Clerk renders the provider buttons inside its own modal, which is
+   what keeps them brand-compliant. */
+.wb-signin-btn {
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 140ms ease, transform 170ms ease;
+}
+
+.wb-signin-btn:hover {
+  background: var(--red-hover);
+}
+
+.wb-signin-btn:active {
+  transform: scale(0.97);
+}
+
+/* Clerk's avatar button — drop its default outline so it reads as part of the
+   header rather than a nested widget. */
+.wb-clerk-avatar {
+  outline: 0;
+}
+
 .wb-signin-note {
   color: var(--muted);
   font-size: 11px;

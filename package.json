@@ -14,6 +14,7 @@
     "worker:dev": "wrangler dev --config worker/wrangler.toml"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.10",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@react-three/rapier": "^2.2.0",
