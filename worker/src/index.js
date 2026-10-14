@@ -19,19 +19,19 @@ import { isRoomCode, generateRoomCode } from '../../shared/mp-protocol.js';
 import { GameRoom } from './GameRoom.js';
 import { verifyGoogleIdToken } from './google.js';
 import { readProgress, mergeProgress } from './progress.js';
-import { verifyClerkToken, bearerToken } from './clerk.js';
+import { verifySupabaseToken, bearerToken } from './supabaseAuth.js';
 
 /**
  * Resolve the caller's stable user id from whichever auth mode is live:
- * a Clerk session token (`Authorization: Bearer …`) or the legacy cookie
+ * a Supabase session token (`Authorization: Bearer …`) or the legacy cookie
  * session. Returns null when neither verifies.
  */
 async function resolveUserId(env, request) {
   const token = bearerToken(request);
   if (token) {
     try {
-      const { clerkUserId } = await verifyClerkToken(token, { issuer: env.CLERK_ISSUER });
-      return clerkUserId;
+      const { userId } = await verifySupabaseToken(token, env);
+      return userId;
     } catch {
       return null;
     }

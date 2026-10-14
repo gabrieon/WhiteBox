@@ -166,9 +166,7 @@
   text-decoration: underline;
 }
 
-/* Clerk sign-in trigger. Styled as a capsule so it matches the header's other
-   controls; Clerk renders the provider buttons inside its own modal, which is
-   what keeps them brand-compliant. */
+/* Sign-in trigger. A capsule to match the header's other controls. */
 .wb-signin-btn {
   min-height: 34px;
   padding: 0 16px;
@@ -190,10 +188,187 @@
   transform: scale(0.97);
 }
 
-/* Clerk's avatar button — drop its default outline so it reads as part of the
-   header rather than a nested widget. */
-.wb-clerk-avatar {
-  outline: 0;
+.wb-signin-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wb-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* --- Sign-in modal -------------------------------------------------------
+   Built in-app rather than embedded from an auth vendor, so there is no
+   third-party badge anywhere in the flow. */
+
+.wb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  animation: wb-fade-in 160ms ease;
+}
+
+.wb-modal-card {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.35);
+  animation: wb-pop-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+.wb-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wb-modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.wb-modal-close {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.wb-modal-close:hover {
+  opacity: 1;
+}
+
+.wb-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wb-provider-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease;
+}
+
+.wb-provider-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-color: var(--ink);
+}
+
+.wb-provider-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wb-modal-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+}
+
+.wb-modal-divider::before,
+.wb-modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+.wb-email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wb-email-form input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+}
+
+.wb-email-form input:focus {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+.wb-modal-error {
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #d32f2f 14%, transparent);
+  color: #d32f2f;
+  font-size: 12px;
+}
+
+.wb-modal-success {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wb-modal-success p {
+  margin: 0;
+}
+
+@keyframes wb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wb-pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-modal-backdrop,
+  .wb-modal-card {
+    animation: none;
+  }
 }
 
 .wb-signin-note {

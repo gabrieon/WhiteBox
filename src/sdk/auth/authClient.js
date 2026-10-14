@@ -12,11 +12,11 @@
 // If the Worker is unconfigured, sign-in is reported as unavailable rather than
 // failing silently, so the rest of the app keeps working as a guest.
 //
-// This path is the fallback. When a Clerk publishable key is configured the app
-// uses Clerk instead (see clerkToken.js) — these functions stay put so the
-// site still signs in if the Clerk key is ever removed.
+// This path is the fallback. When Supabase keys are configured the app uses
+// Supabase instead (see supabaseClient.js) — these functions stay put so the
+// site still signs in if the Supabase keys are ever removed.
 
-import { getClerkToken } from './clerkToken.js';
+import { getSupabaseToken } from './supabaseClient.js';
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const SCRIPT_ID = 'whitebox-gsi';
@@ -65,9 +65,9 @@ function loadGis() {
 
 export async function apiFetch(path, init = {}) {
   const url = `${apiBase()}${path}`;
-  // Cookie auth (Google) needs credentials; Clerk auth needs a bearer token.
-  // Sending both is harmless and keeps one call site for both modes.
-  const token = getClerkToken();
+  // Cookie auth (legacy Google) needs credentials; Supabase auth needs a bearer
+  // token. Sending both is harmless and keeps one call site for both modes.
+  const token = getSupabaseToken();
 
   const headers = { 'Content-Type': 'application/json', ...(init.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;

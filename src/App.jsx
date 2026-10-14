@@ -4,7 +4,7 @@ import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
-import { clerkEnabled } from './sdk/auth/clerkToken.js';
+import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
 
@@ -376,7 +376,7 @@ export default function App() {
             )}
           </div>
           <div className="wb-topbar">
-            <SignIn mode={clerkEnabled() ? 'clerk' : 'legacy'} />
+            <SignIn mode={supabaseEnabled() ? 'supabase' : 'legacy'} />
             <ThemeToggle />
           </div>
         </header>
