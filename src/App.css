@@ -132,6 +132,19 @@
   min-height: 36px;
 }
 
+/* The sign-in button is a cross-origin iframe, so its document cannot be
+   styled from here. Browsers derive an embedded document's default canvas
+   from the `color-scheme` of the iframe ELEMENT, though — so declaring it
+   here is what stops Google's frame painting a white rectangle around its own
+   button when the page is dark but the OS is in light mode. */
+.wb-signin-slot iframe {
+  color-scheme: dark;
+}
+
+[data-theme='light'] .wb-signin-slot iframe {
+  color-scheme: light;
+}
+
 .wb-signin-name {
   color: var(--ink);
   font-size: 12px;

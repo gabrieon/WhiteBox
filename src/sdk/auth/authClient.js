@@ -154,7 +154,11 @@ export async function renderGoogleButton(element, { onProfile } = {}) {
       size: 'medium',
       text: 'signin_with',
       shape: 'pill',
-      width: Math.min(220, Math.max(160, element.clientWidth || 200)),
+      // No `width` on purpose. Passing one makes GIS build an iframe of that
+      // width but draw the button at its own natural size — and the leftover
+      // strip shows the iframe's white document background as a bright
+      // rectangle around the button, most obvious on the dark theme. Letting
+      // GIS size both together keeps the button edge-to-edge.
       logo_alignment: 'left',
     });
   });
