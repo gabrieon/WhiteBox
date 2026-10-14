@@ -158,6 +158,11 @@
   font-size: 11px;
 }
 
+.wb-signin-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
 /* ---------- game rows ---------- */
 
 .wb-row {

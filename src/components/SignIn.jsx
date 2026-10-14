@@ -7,7 +7,7 @@ import { renderGoogleButton } from '../sdk/auth/authClient.js';
 // screen with a title and game rows.
 export default function SignIn() {
   const { status, profile, configured, onSignedIn, signOut } = useAuth();
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState('');
   const slotRef = useRef(null);
 
   // Deliberately NOT re-rendered when the page theme changes. Google's
@@ -23,10 +23,18 @@ export default function SignIn() {
     let cancelled = false;
     renderGoogleButton(slotRef.current, { onProfile: onSignedIn })
       .then((result) => {
-        if (!cancelled && result?.error) setFailed(true);
+        // The Worker's rejection reason (bad_audience, bad_signature,
+        // token_expired, …) is the only useful thing to show here — a generic
+        // "try again" makes this impossible to diagnose.
+        if (!cancelled && result?.error) {
+          console.error('[whitebox] sign-in failed:', result.error);
+          setError(result.error);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('[whitebox] sign-in failed:', err);
+        setError(err?.message || 'unknown_error');
       });
     return () => { cancelled = true; };
   }, [status, configured, onSignedIn]);
@@ -47,7 +55,11 @@ export default function SignIn() {
   return (
     <div className="wb-signin-row">
       <div className="wb-signin-slot" ref={slotRef} />
-      {failed && <span className="wb-signin-note">Sign-in failed — try again.</span>}
+      {error && (
+        <span className="wb-signin-note" role="alert">
+          Sign-in failed: <code>{error}</code>
+        </span>
+      )}
     </div>
   );
 }
