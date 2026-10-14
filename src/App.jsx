@@ -41,7 +41,7 @@ const TRENDING_IDS = [
   'higher-lower',
   'reaction-test',
   'orb-arena',
-  'orb-collector-2d',
+  'orb-dash-2d',
 ];
 
 const ALL_CATEGORIES = 'All';
@@ -140,6 +140,11 @@ export default function App() {
   // Continue Playing = anything with a recent open OR a saved snapshot,
   // ordered by most recent activity. Saved runs (mid-game state) sort by
   // when they were saved; plain opens sort by when they happened.
+  //
+  // `filter(Boolean)` matters here: findGame returns null for an id it doesn't
+  // know, and this list is built from ids in localStorage. Once a game is
+  // removed from the registry, the player's saved entry still names it, so an
+  // unfiltered null would reach the render and crash the row.
   const continuePlaying = useMemo(() => {
     const activity = new Map();
     for (const [id, entry] of Object.entries(plays)) {
@@ -151,7 +156,7 @@ export default function App() {
     return [...activity.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([id]) => findGame(id))
-      .filter((game) => game !== undefined)
+      .filter(Boolean)
       .slice(0, 6);
   }, [plays, progressAt]);
 
@@ -159,7 +164,7 @@ export default function App() {
     .filter(([, entry]) => entry.c > 0)
     .sort((a, b) => b[1].c - a[1].c)
     .map(([id]) => findGame(id))
-    .filter((game) => game !== undefined)
+    .filter(Boolean)
     .slice(0, 6), [plays]);
 
   // --- trending ---------------------------------------------------------------
@@ -182,7 +187,7 @@ export default function App() {
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .map((x) => findGame(x.id))
-      .filter((game) => game !== undefined);
+      .filter(Boolean);
 
     // Fewer than three opens is noise, not a ranking, so those get ignored in
     // favour of the curated shortlist.
@@ -193,7 +198,7 @@ export default function App() {
     for (const id of TRENDING_IDS) {
       if (picks.length >= 6) break;
       const game = findGame(id);
-      if (game !== undefined && !picks.some((p) => p.id === game.id)) picks.push(game);
+      if (game && !picks.some((p) => p.id === game.id)) picks.push(game);
     }
 
     return picks;
