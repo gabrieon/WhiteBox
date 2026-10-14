@@ -144,11 +144,13 @@ export async function renderGoogleButton(element, { onProfile } = {}) {
       type: 'standard',
       // One theme, always — never swapped with the page theme. Google's
       // `outline` and `filled_black` differ by a 1px border, which changes the
-      // button's inner size and moves the logo ~2px. Keeping it fixed means the
-      // button is pixel-identical before and after a light/dark toggle.
-      // `outline` is the right pick on both: it reads clearly on the black page
-      // and is the natural treatment on white.
-      theme: 'outline',
+      // button's inner size and moves the logo ~2px on every theme toggle.
+      //
+      // `filled_black` is the fixed choice because it sits correctly on BOTH
+      // page themes: on the black page it is a dark button with white text, and
+      // on white it is Google's standard dark button. `outline` was the earlier
+      // pick and painted a bright white block on the black page.
+      theme: 'filled_black',
       size: 'medium',
       text: 'signin_with',
       shape: 'pill',

@@ -26,6 +26,7 @@ import {
   sessionCookieHeader,
   clearedSessionCookieHeader,
   publicProfile,
+  refreshSessionIfStale,
 } from './session.js';
 
 // The DO class must be exported from the Worker's main module.
@@ -146,7 +147,14 @@ export default {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
       const found = await readSession(env, request);
-      return json({ profile: found ? publicProfile(found.record) : null }, 200, authCorsHeaders);
+      // Renew an active session in place so an idle week never signs anyone out.
+      const renewed = await refreshSessionIfStale(env, found);
+      return json(
+        { profile: found ? publicProfile(found.record) : null },
+        200,
+        authCorsHeaders,
+        renewed ? { 'Set-Cookie': renewed } : {},
+      );
     }
 
     // POST /auth/logout

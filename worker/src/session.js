@@ -6,7 +6,11 @@
 // and that is the only source of truth for "who is this".
 
 const COOKIE_NAME = 'wb_session';
-const SESSION_TTL_SEC = 60 * 60 * 24 * 30; // 30 days
+// A year, refreshed on activity (see refreshSessionIfStale). Expiry is a
+// backstop, not a routine event: nobody should be silently signed out.
+const SESSION_TTL_SEC = 60 * 60 * 24 * 365;
+// How stale a session may get before the next request renews it.
+const REFRESH_AFTER_SEC = 60 * 60 * 24 * 7;
 const SESSION_PREFIX = 'session:';
 
 // 256 bits of entropy, base64url encoded. crypto.getRandomValues is the CSPRNG
@@ -26,12 +30,18 @@ function cookieHeader(value, { maxAge } = {}) {
   // localhost:5173 vs 127.0.0.1:8787 in dev), and SameSite=Lax cookies are
   // NOT sent on cross-site fetch/WebSocket requests — login would silently
   // never work. Secure is accepted on http://localhost (trustworthy context).
+  //
+  // Partitioned (CHIPS) is the important one: this is inherently a third-party
+  // cookie, set by workers.dev while the page is rarelyknown.in. Browsers now
+  // block or evict unpartitioned third-party cookies, which showed up as the
+  // user being silently signed out. Partitioning keeps the session.
   const parts = [
     `${COOKIE_NAME}=${value}`,
     'Path=/',
     'HttpOnly',
     'SameSite=None',
     'Secure',
+    'Partitioned',
   ];
   if (typeof maxAge === 'number') parts.push(`Max-Age=${maxAge}`);
   return parts.join('; ');
@@ -95,6 +105,29 @@ export async function readSession(env, request) {
 export async function destroySession(env, request) {
   const id = parseCookies(request)[COOKIE_NAME];
   if (id) await env.SESSIONS.delete(SESSION_PREFIX + id);
+}
+
+/**
+ * Slide the session forward on activity.
+ *
+ * Rewrites the KV entry (pushing its TTL out again) and returns a Set-Cookie
+ * header so the browser's copy gets a fresh Max-Age too. Only fires once the
+ * session has actually gone stale, so this is at most one write a week per
+ * user rather than one per request.
+ *
+ * Returns null when nothing needed doing.
+ */
+export async function refreshSessionIfStale(env, found) {
+  if (!found) return null;
+  const lastSeen = found.record?.lastSeenAt || 0;
+  if (Date.now() - lastSeen < REFRESH_AFTER_SEC * 1000) return null;
+
+  const record = { ...found.record, lastSeenAt: Date.now() };
+  await env.SESSIONS.put(SESSION_PREFIX + found.id, JSON.stringify(record), {
+    expirationTtl: SESSION_TTL_SEC,
+  });
+  found.record = record;
+  return sessionCookieHeader(found.id);
 }
 
 // Strip anything the client should not see. Returned verbatim to the browser.
