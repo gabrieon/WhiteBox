@@ -32,7 +32,23 @@ export async function verifySupabaseToken(token, env) {
     throw new Error('invalid_user');
   }
 
-  return { userId: user.id };
+  // The profile fields travel back with the token check, so attributing a
+  // created game to its author costs no extra round-trip. The provider's field
+  // names differ (Google gives full_name, GitHub gives user_name), so try them
+  // in order and fall back to the local part of the address.
+  const meta = user.user_metadata || {};
+  const name = meta.full_name
+    || meta.name
+    || meta.user_name
+    || meta.preferred_username
+    || (typeof user.email === 'string' ? user.email.split('@')[0] : null)
+    || null;
+
+  return {
+    userId: user.id,
+    name,
+    avatar: meta.picture || meta.avatar_url || null,
+  };
 }
 
 /** Pull the bearer token out of an Authorization header. */

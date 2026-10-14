@@ -4,9 +4,11 @@ import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
+import CreateGame from './components/CreateGame.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
+import { fetchCreatedGames } from './sdk/games/api.js';
 
 // --- play history ------------------------------------------------------------
 // Historical play counts power the Top Played row:
@@ -38,8 +40,8 @@ const TRENDING_IDS = [
   'orb-duel',
   'higher-lower',
   'reaction-test',
-  'orb-dash-2d',
   'orb-arena',
+  'orb-collector-2d',
 ];
 
 const ALL_CATEGORIES = 'All';
@@ -197,19 +199,44 @@ export default function App() {
     return picks;
   }, [plays, now]);
 
+  // --- created games --------------------------------------------------------
+  // Player-published entries live in the database, not the registry. A failure
+  // here must not take the library down, so the list simply stays empty and the
+  // built-in games carry on.
+  const [createdGames, setCreatedGames] = useState([]);
+
+  const refreshCreated = useCallback(() => {
+    fetchCreatedGames()
+      .then(setCreatedGames)
+      .catch(() => setCreatedGames([]));
+  }, []);
+
+  useEffect(() => {
+    refreshCreated();
+  }, [refreshCreated]);
+
+  // The registry holds built-ins; the database holds player creations. Merging
+  // them here means every downstream filter, sort and search sees one list.
+  // A created game can never shadow a built-in: registry ids win.
+  const library = useMemo(() => {
+    const builtin = listGames();
+    const taken = new Set(builtin.map((g) => g.id));
+    return [...builtin, ...createdGames.filter((g) => !taken.has(g.id))];
+  }, [createdGames]);
+
   // --- browse all ------------------------------------------------------------
   // The full catalog, not just the playable few. Category chips are ordered by
   // how many games actually use them, so the useful ones come first.
 
   const categoryList = useMemo(() => {
     const counts = new Map();
-    listGames().forEach((game) => {
+    library.forEach((game) => {
       (game.categories || []).forEach((c) => counts.set(c, (counts.get(c) || 0) + 1));
     });
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([name]) => name);
-  }, []);
+  }, [library]);
 
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(ALL_CATEGORIES);
@@ -255,7 +282,7 @@ export default function App() {
 // Playable games first, then alphabetical — a real store's ordering.
   const browse = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = listGames().filter((game) => {
+    const filtered = library.filter((game) => {
       if (playableOnly && !isPlayable(game)) return false;
       if (category !== ALL_CATEGORIES
         && !(game.categories || []).includes(category)) return false;
@@ -278,7 +305,7 @@ export default function App() {
       if (pa !== pb) return pa - pb;
       return a.title.localeCompare(b.title);
     });
-  }, [query, category, playableOnly, sort, plays]);
+  }, [query, category, playableOnly, sort, plays, library]);
 
   // Curated rows obey the search, and each game lands in at most ONE curated
   // row: the page used to show Reaction Test and Higher or Lower four times
@@ -309,17 +336,19 @@ export default function App() {
     return Math.max(opened, saved) || null;
   }, [plays, progressAt]);
 
+  // Two screens: the library and the Create screen. Hash routing keeps both
+  // shareable and back-button friendly without pulling in a router.
+  const [route, setRoute] = useState(() => (
+    window.location.hash === '#/create' ? 'create' : 'library'
+  ));
+
   const applyHash = useCallback(() => {
     // Refresh saved-run keys on every navigation, in case a game saved (or
     // cleared) a snapshot on its way out.
     const progressMap = listLocalProgress();
     setProgressAt(Object.fromEntries(Object.entries(progressMap).map(([id, entry]) => [id, entry.at])));
 
-    // There is no play screen right now, so a #/game/... link just falls back
-    // to the library.
-    if (window.location.hash !== '#/' && window.location.hash !== '') {
-      window.history.replaceState(null, '', '#/');
-    }
+    setRoute(window.location.hash === '#/create' ? 'create' : 'library');
   }, []);
 
   useEffect(() => {
@@ -346,6 +375,10 @@ export default function App() {
   // until the new play flow is decided. The capsules stay on the cards so the
   // layout doesn't need redoing when it is.
   function openGame() {}
+
+  function navigate(next) {
+    window.location.hash = next === 'create' ? '#/create' : '#/';
+  }
 
   return (
     <div className="wb-shell">
@@ -376,10 +409,28 @@ export default function App() {
             )}
           </div>
           <div className="wb-topbar">
+            <button
+              type="button"
+              className="wb-create-btn"
+              onClick={() => navigate('create')}
+            >
+              Create
+            </button>
             <SignIn mode={supabaseEnabled() ? 'supabase' : 'legacy'} />
             <ThemeToggle />
           </div>
         </header>
+
+        {route === 'create' ? (
+          <CreateGame
+            onBack={() => navigate('library')}
+            onCreated={refreshCreated}
+            onDeleted={(game) => {
+              setCreatedGames((prev) => prev.filter((g) => g.id !== game.id));
+            }}
+          />
+        ) : (
+          <>
         {rows.continue.length > 0 && (
           <GameRow
             title="Continue Playing"
@@ -468,6 +519,8 @@ export default function App() {
             </div>
           )}
         </section>
+          </>
+        )}
       </main>
     </div>
   );

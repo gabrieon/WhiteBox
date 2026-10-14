@@ -809,3 +809,260 @@
     transform: none;
   }
 }
+
+/* --- Create game ---------------------------------------------------------
+   The Create screen (#/create). Same flat language as the rest of the site:
+   black on white in light mode, inverted in dark, no shadows or gradients. */
+
+.wb-create-btn {
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 140ms ease, color 140ms ease, transform 170ms ease;
+}
+
+.wb-create-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.wb-create-btn:active {
+  transform: scale(0.97);
+}
+
+.wb-create {
+  padding: 8px 0 60px;
+}
+
+.wb-create-back {
+  margin-bottom: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wb-create-back:hover {
+  opacity: 1;
+}
+
+.wb-create-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .wb-create-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.wb-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 520px;
+}
+
+.wb-create-form h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.wb-create-lede {
+  margin: -8px 0 0;
+  opacity: 0.65;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.wb-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wb-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+}
+
+.wb-field input,
+.wb-field textarea,
+.wb-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.wb-field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.wb-field input:focus,
+.wb-field textarea:focus,
+.wb-field select:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.wb-field-hint {
+  opacity: 0.5;
+  font-size: 11px;
+}
+
+.wb-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wb-create-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 20px;
+}
+
+.wb-create-preview .wb-card {
+  pointer-events: none;
+}
+
+.wb-card-media-preview {
+  cursor: default;
+}
+
+.wb-create-note {
+  margin: 0;
+  opacity: 0.5;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.wb-create-mine {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.wb-create-mine h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wb-mine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-mine-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.wb-mine-art {
+  width: 64px;
+  height: 48px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.wb-mine-art .wb-game-art {
+  height: 100%;
+}
+
+.wb-mine-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.wb-mine-body strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wb-mine-body span {
+  opacity: 0.55;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-mine-delete {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wb-mine-delete:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.wb-create-gate {
+  max-width: 460px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.wb-create-gate h2 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.wb-create-gate p {
+  margin: 0;
+  opacity: 0.65;
+  font-size: 13px;
+  line-height: 1.6;
+}

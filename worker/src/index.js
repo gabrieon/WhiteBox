@@ -9,6 +9,9 @@
 //   POST /auth/logout   -> destroy the session
 //   GET  /v1/me/progress      -> saved per-game progress for the signed-in user
 //   PUT  /v1/me/progress      -> merge per-game progress ({ id: data|null })
+//   GET  /v1/games            -> published games (public read)
+//   POST /v1/games            -> publish a game as the signed-in player
+//   DELETE /v1/games/:id      -> remove one of your own games
 //
 // The Durable Object id is derived deterministically from the room code via
 // idFromName (Cloudflare hashes the name into a namespace-valid id), so any
@@ -20,25 +23,35 @@ import { GameRoom } from './GameRoom.js';
 import { verifyGoogleIdToken } from './google.js';
 import { readProgress, mergeProgress } from './progress.js';
 import { verifySupabaseToken, bearerToken } from './supabaseAuth.js';
+import { parseCreateGame, listGames, createGame, deleteGame } from './games.js';
 
 /**
- * Resolve the caller's stable user id from whichever auth mode is live:
- * a Supabase session token (`Authorization: Bearer …`) or the legacy cookie
- * session. Returns null when neither verifies.
+ * Resolve the caller's identity from whichever auth mode is live: a Supabase
+ * session token (`Authorization: Bearer …`) or the legacy cookie session.
+ * Returns null when neither verifies.
  */
-async function resolveUserId(env, request) {
+async function resolveUser(env, request) {
   const token = bearerToken(request);
   if (token) {
     try {
-      const { userId } = await verifySupabaseToken(token, env);
-      return userId;
+      const { userId, name } = await verifySupabaseToken(token, env);
+      return { id: userId, name: name || null };
     } catch {
       return null;
     }
   }
   const found = await readSession(env, request);
-  return found ? found.record.googleSub : null;
+  return found
+    ? { id: found.record.googleSub, name: found.record.name || found.record.email || null }
+    : null;
 }
+
+/** Identity only — enough for progress, which is keyed by user alone. */
+async function resolveUserId(env, request) {
+  const user = await resolveUser(env, request);
+  return user ? user.id : null;
+}
+
 import {
   createSession,
   readSession,
@@ -115,8 +128,26 @@ async function readJsonBody(request) {
   }
 }
 
+// The request body lives in its own function so the exported worker can wrap it
+// in a single error boundary. Without that, any thrown error escapes as a bare
+// 500 with no log line and no body, which makes production faults undiagnosable.
 export default {
   async fetch(request, env) {
+    try {
+      return await handleRequest(request, env);
+    } catch (err) {
+      // Log the real cause for the console; return a generic reason so internal
+      // details (schema, bindings, stack) never reach the client.
+      console.error('[whitebox-mp] unhandled error', err?.stack || err);
+      return new Response(JSON.stringify({ error: 'internal_error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  },
+};
+
+async function handleRequest(request, env) {
     const url = new URL(request.url);
     const cors = corsFor(request, env);
     const authCorsHeaders = authCors(request, env);
@@ -225,6 +256,60 @@ export default {
       }
     }
 
+    // ---- created games ----------------------------------------------------
+    // GET /v1/games -> { games: [...] }
+    // Public read: the library shows every published game to every visitor, so
+    // this deliberately does NOT require a session. Browsing is not privileged.
+    if (url.pathname === '/v1/games' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const limit = url.searchParams.get('limit');
+      const games = await listGames(env, { limit: limit ? Number(limit) : 60 });
+      return json({ games }, 200, authCorsHeaders);
+    }
+
+    // POST /v1/games { title, description, categories, type, mode }
+    // Creates a catalogue entry owned by the caller. The creator is taken from
+    // the verified token, so a forged body cannot misattribute authorship.
+    if (url.pathname === '/v1/games' && request.method === 'POST') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+
+      const body = await readJsonBody(request);
+      let draft;
+      try {
+        draft = parseCreateGame(body);
+      } catch (err) {
+        return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+      }
+
+      try {
+        const game = await createGame(env, draft, user.id, user.name);
+        return json({ game }, 201, authCorsHeaders);
+      } catch (err) {
+        return json({ error: err?.message || 'create_failed' }, 400, authCorsHeaders);
+      }
+    }
+
+    // DELETE /v1/games/:id
+    // Ownership is enforced in the query itself, so a player can only ever
+    // remove their own game whatever id they send.
+    const deleteMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})$/);
+    if (deleteMatch && request.method === 'DELETE') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const removed = await deleteGame(env, deleteMatch[1], user.id);
+      if (!removed) return json({ error: 'not_found' }, 404, authCorsHeaders);
+      return json({ ok: true }, 200, authCorsHeaders);
+    }
+
     // ---- multiplayer -----------------------------------------------------
 
     if (url.pathname === '/rooms' && request.method === 'POST') {
@@ -247,5 +332,4 @@ export default {
     }
 
     return new Response('not found', { status: 404, headers: cors });
-  },
-};
+}

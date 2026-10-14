@@ -28,8 +28,21 @@ new_sqlite_classes = ["GameRoom"]
 binding = "SESSIONS"
 id = "13d23a07e6ec4e66b372dab75e44d053"
 
+# Player-created games (title, description, tags, artwork type). A real SQL
+# database rather than KV because the library filters and sorts by created_at
+# and creator. Schema lives in worker/migrations/.
+[[d1_databases]]
+binding = "GAMES"
+database_name = "whitebox-games"
+database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
+
 # Google OAuth. Set with:  npx wrangler secret put GOOGLE_CLIENT_ID
 # (secrets are encrypted; do NOT commit a client id as a plain var)
+
+# Supabase Auth. The Worker validates session tokens against Supabase's own
+# /auth/v1/user endpoint, so the project JWT secret never lives here.
+# Set with:  npx wrangler secret put SUPABASE_URL
+#            npx wrangler secret put SUPABASE_ANON_KEY
 
 # Origins allowed to call the auth endpoints with credentials.
 # Comma-separated. Localhost dev origins are always allowed.

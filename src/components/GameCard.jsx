@@ -7,7 +7,11 @@ function metaLine(game) {
   const genres = (game.categories || []).slice(0, 2);
   const mode = game.mode
     || ((game.playModes || []).includes('multiplayer') ? 'Multiplayer' : 'Solo');
-  return [...genres, mode].filter(Boolean).join(' · ');
+  const parts = [...genres, mode].filter(Boolean);
+  // Player-created games name their author, so it is clear the library mixes
+  // shipped titles with community ones.
+  if (game.origin === 'user' && game.creatorName) parts.push(`by ${game.creatorName}`);
+  return parts.join(' · ');
 }
 
 export default function GameCard({ game, onOpen, playable, meta }) {
