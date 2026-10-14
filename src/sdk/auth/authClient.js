@@ -58,11 +58,26 @@ function loadGis() {
 }
 
 export async function apiFetch(path, init = {}) {
-  const res = await fetch(`${apiBase()}${path}`, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
+  const url = `${apiBase()}${path}`;
+
+  let res;
+  try {
+    res = await fetch(url, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+    });
+  } catch (cause) {
+    // A bare "Failed to fetch" tells us nothing. The request never reached the
+    // Worker, which in practice means one of: an extension or network rule
+    // blocking the API host, a CORS rejection, or the device being offline.
+    const err = new Error(`network_blocked (${url})`);
+    err.cause = cause;
+    err.url = url;
+    console.error('[whitebox] request never left the browser:', url, cause);
+    throw err;
+  }
+
   let data = {};
   try { data = await res.json(); } catch { /* empty body is fine */ }
   if (!res.ok) {
