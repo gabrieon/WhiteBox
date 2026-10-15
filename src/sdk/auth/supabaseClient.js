@@ -37,13 +37,25 @@ export function getSupabaseToken() {
   return currentToken;
 }
 
+// Where the OAuth round trip should come back to.
+//
+// Defaults to whatever host the page was loaded from, which is right for local
+// dev. In production it's pinned to the canonical host instead: the site is also
+// reachable at its workers.dev URL, and Supabase only honours a redirect target
+// that is in its allowlist — so signing in from that mirror would silently drop
+// the player on the wrong host. Pinning means the round trip always returns to
+// the domain that is actually allowlisted.
+export function siteUrl() {
+  return import.meta.env?.VITE_SITE_URL || window.location.origin;
+}
+
 // Google / Apple / GitHub all go through Supabase's OAuth broker, which handles
 // the code exchange and PKCE for us. The browser never sees a client secret.
 export async function signInWithProvider(provider) {
   if (!supabase) throw new Error('auth_not_configured');
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
-    options: { redirectTo: window.location.origin },
+    options: { redirectTo: siteUrl() },
   });
   if (error) throw error;
 }
@@ -52,7 +64,7 @@ export async function signInWithEmail(email) {
   if (!supabase) throw new Error('auth_not_configured');
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.origin },
+    options: { emailRedirectTo: siteUrl() },
   });
   if (error) throw error;
 }
