@@ -500,7 +500,7 @@ export default function App() {
 
           <div className="wb-header-search">
             <span className="wb-search-icon" aria-hidden="true">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <circle cx="11" cy="11" r="7" />
                 <path d="M20 20l-3.6-3.6" />
               </svg>
