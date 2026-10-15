@@ -13,17 +13,6 @@
 // built-in one without pretending it has an engine attached.
 
 import { normalizeManifest, validateManifest } from '../sdk/manifest.js';
-
-// Lightweight, already-working React game — imported statically (no engine deps).
-import ReactionTest from './ReactionTest.jsx';
-
-// Heavier games declare a `loader` in their manifest so their engine
-// (three/rapier/drei, phaser) is code-split and only fetched when opened.
-import orbArena from './orb-arena/manifest.js';
-import orbArenaMp from './orb-arena-mp/manifest.js';
-import orbCollector2d from './orb-collector-2d/manifest.js';
-import orbDuel from './orb-duel/manifest.js';
-import higherLower from './higher-lower/manifest.js';
 import wordLock from './word-lock/manifest.js';
 
 const registry = new Map();
@@ -55,23 +44,11 @@ export function registerGame(manifest) {
   return normalized;
 }
 
-const reactionTest = {
-  id: 'reaction-test',
-  title: 'Reaction Test',
-  description: 'A quick challenge for your reflexes and focus.',
-  categories: ['Tests'],
-  type: 'reaction',
-  engine: 'react',
-  input: ['mouse', 'keyboard'],
-  mode: 'Solo',
-  component: ReactionTest,
-};
-
 // Code-split: WORDLOCK ships its own word list and component, so neither is
 // pulled into the library bundle for visitors who never open it.
 wordLock.loader = () => import('./word-lock/WordLock.jsx');
 
-const builtIns = [reactionTest, orbArena, orbArenaMp, orbCollector2d, orbDuel, higherLower, wordLock];
+const builtIns = [wordLock];
 
 builtIns.forEach(registerGame);
 

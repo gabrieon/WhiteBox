@@ -44,15 +44,10 @@ function readPlays() {  try {
   }
 }
 
-// Curated trending row: the most social, instantly playable games.
-const TRENDING_IDS = [
-  'orb-arena-mp',
-  'orb-duel',
-  'higher-lower',
-  'reaction-test',
-  'orb-arena',
-  'orb-dash-2d',
-];
+// Curated trending row. Deliberately short while the library has one built-in
+// game: the row falls back to this shortlist for a visitor with no history, and
+// padding it with ids that no longer exist would only mean dead entries.
+const TRENDING_IDS = ['word-lock'];
 
 const ALL_CATEGORIES = 'All';
 

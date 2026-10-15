@@ -1268,6 +1268,7 @@
 .wb-play-rules {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   gap: 20px;
   min-height: 100%;
@@ -1278,32 +1279,38 @@
 .wb-play-rules-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 44ch;
+  gap: 12px;
+  width: 100%;
+  max-width: 46ch;
   margin: 0;
   padding: 0;
   list-style: none;
   counter-reset: rule;
 }
 
+/* The rule number is inline rather than absolutely positioned in a left gutter.
+   A gutter would need asymmetric padding to make room for it, and that offset
+   is exactly what stops the text sitting truly centred. */
 .wb-play-rules-list li {
-  position: relative;
-  padding-left: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
   color: #d4d4d4;
   font-size: 13px;
   line-height: 1.6;
+  text-align: center;
   counter-increment: rule;
 }
 
 .wb-play-rules-list li::before {
   content: counter(rule);
-  position: absolute;
-  left: 0;
-  top: 1px;
+  flex: none;
   display: grid;
   place-items: center;
   width: 20px;
   height: 20px;
+  margin-top: 1px;
   border: 1px solid #ffffff2e;
   border-radius: 50%;
   color: #9a9a9a;
@@ -1314,6 +1321,7 @@
 .wb-play-rules-foot {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
   cursor: default;
 }
