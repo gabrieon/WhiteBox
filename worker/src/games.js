@@ -199,6 +199,43 @@ export async function createGame(env, draft, creatorId, creatorName) {
 }
 
 /**
+ * Update a game the caller owns. Returns the updated row, or null when the game
+ * doesn't exist or belongs to someone else — the two are deliberately
+ * indistinguishable so this endpoint can't be used to probe for ids.
+ */
+export async function updateGame(env, id, draft, creatorId) {
+  if (!env.GAMES) throw new ValidationError('storage_not_configured');
+
+  const result = await env.GAMES.prepare(
+    `UPDATE games
+        SET title = ?, description = ?, categories = ?, type = ?, mode = ?
+      WHERE id = ? AND creator_id = ?`,
+  ).bind(
+    draft.title,
+    draft.description,
+    JSON.stringify(draft.categories),
+    draft.type,
+    draft.mode,
+    id,
+    creatorId,
+  ).run();
+
+  if ((result.meta?.changes ?? 0) === 0) return null;
+
+  const row = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
+  return rowToGame(row);
+}
+
+/** True when this creator owns the game. Read-only: never mutates as a side effect. */
+export async function ownsGame(env, id, creatorId) {
+  if (!env.GAMES) return false;
+  const row = await env.GAMES.prepare(
+    'SELECT 1 AS ok FROM games WHERE id = ? AND creator_id = ?',
+  ).bind(id, creatorId).first();
+  return Boolean(row);
+}
+
+/**
  * Attach an uploaded thumbnail to a game the caller owns.
  *
  * Ownership is enforced in the UPDATE itself, so this returns false both when the

@@ -30,6 +30,15 @@ export async function deleteGame(id) {
   return Boolean(data?.ok);
 }
 
+/** Edit an existing game. The thumbnail is left alone — that has its own routes. */
+export async function updateGame(id, draft) {
+  const data = await apiFetch(`/v1/games/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(draft),
+  });
+  return data.game;
+}
+
 /** Public URL for a game's uploaded thumbnail, or null if it has none. */
 export function thumbUrl(game) {
   return game?.thumbKey ? apiBase() + `/v1/thumb/${encodeURIComponent(game.id)}` : null;

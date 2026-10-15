@@ -1394,3 +1394,30 @@
 @media (prefers-reduced-motion: reduce) {
   .wb-play { animation: none; }
 }
+
+.wb-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wb-form-cancel {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #6f6f6f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wb-form-cancel:hover { color: var(--ink); }
+.wb-form-cancel:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.wb-mine-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}

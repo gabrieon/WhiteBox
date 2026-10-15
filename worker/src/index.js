@@ -11,6 +11,7 @@
 //   PUT  /v1/me/progress      -> merge per-game progress ({ id: data|null })
 //   GET  /v1/games            -> published games (public read)
 //   POST /v1/games            -> publish a game as the signed-in player
+//   PUT  /v1/games/:id        -> edit one of your own games
 //   DELETE /v1/games/:id      -> remove one of your own games
 //
 // The Durable Object id is derived deterministically from the room code via
@@ -24,7 +25,8 @@ import { verifyGoogleIdToken } from './google.js';
 import { readProgress, mergeProgress } from './progress.js';
 import { verifySupabaseToken, bearerToken } from './supabaseAuth.js';
 import {
-  parseCreateGame, listGames, createGame, deleteGame, setThumb, getThumbKey,
+  parseCreateGame, listGames, createGame, updateGame, deleteGame,
+  setThumb, getThumbKey, ownsGame,
 } from './games.js';
 import {
   readUpload, putThumb, getThumb, deleteThumb, thumbKey,
@@ -306,6 +308,34 @@ async function handleRequest(request, env) {
       }
     }
 
+    // PUT /v1/games/:id — edit one of your own games.
+    // The thumbnail is not touched here: replacing or clearing it has its own
+    // routes, so a plain metadata edit can't silently discard a photo.
+    const updateMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})$/);
+    if (updateMatch && request.method === 'PUT') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+
+      const body = await readJsonBody(request);
+      let draft;
+      try {
+        draft = parseCreateGame(body);
+      } catch (err) {
+        return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+      }
+
+      try {
+        const updated = await updateGame(env, updateMatch[1], draft, user.id);
+        if (!updated) return json({ error: 'not_found' }, 404, authCorsHeaders);
+        return json({ game: updated }, 200, authCorsHeaders);
+      } catch (err) {
+        return json({ error: err?.message || 'update_failed' }, 400, authCorsHeaders);
+      }
+    }
+
     // DELETE /v1/games/:id
     // Ownership is enforced in the query itself, so a player can only ever
     // remove their own game whatever id they send.
@@ -338,8 +368,12 @@ async function handleRequest(request, env) {
 
       const id = thumbMatch[1];
       // Prove ownership before spending bandwidth on the image, not after.
-      const owned = await setThumb(env, id, null, user.id);
-      if (!owned) return json({ error: 'not_found' }, 404, authCorsHeaders);
+      // This must be a read: probing with a real UPDATE would clear thumb_key
+      // first, so a rejected or oversized upload would leave the game pointing
+      // at an orphaned object with no thumbnail reference at all.
+      if (!(await ownsGame(env, id, user.id))) {
+        return json({ error: 'not_found' }, 404, authCorsHeaders);
+      }
 
       let upload;
       try {
@@ -349,7 +383,11 @@ async function handleRequest(request, env) {
       }
 
       const key = thumbKey(id);
-      await putThumb(env, key, upload.bytes, upload.contentType);
+      try {
+        await putThumb(env, key, upload.bytes, upload.contentType);
+      } catch (err) {
+        return json({ error: err?.message || 'storage_not_configured' }, 503, authCorsHeaders);
+      }
       await setThumb(env, id, key, user.id);
 
       return json({ ok: true, key, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);

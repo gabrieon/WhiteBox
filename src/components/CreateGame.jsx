@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../sdk/auth/authContext.js';
-import { fetchCreatedGames, createGame, deleteGame, uploadThumb, deleteThumb, thumbUrl } from '../sdk/games/api.js';
+import { fetchCreatedGames, createGame, updateGame, deleteGame, uploadThumb, deleteThumb, thumbUrl } from '../sdk/games/api.js';
 import { prepareThumbnail, revokePreview } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
 
@@ -105,7 +105,7 @@ function describeError(err) {
 // while nothing is loaded.
 const NO_GAMES = [];
 
-export default function CreateGame({ onCreated, onDeleted, onBack }) {
+export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) {
   const { isSignedIn, profile } = useAuth();
 
   const [title, setTitle] = useState('');
@@ -113,6 +113,12 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
   const [tagsRaw, setTagsRaw] = useState('');
   const [type, setType] = useState('puzzle');
   const [mode, setMode] = useState('Solo');
+
+  // The game currently open for editing, or null when publishing a new one.
+  // Editing reuses this same form rather than living on a second screen: the
+  // fields are identical, so a separate view would be duplicated validation and
+  // a duplicated submit path for no gain.
+  const [editing, setEditing] = useState(null);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -214,37 +220,68 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
     setError('');
     setBusy(true);
     try {
-      const game = await createGame({
+      const draft = {
         title: cleanText(title),
         description: cleanText(description),
         categories: tags,
         type,
         mode,
-      });
+      };
 
-      // The image rides along right after the game exists, since the upload path
-      // needs its id. A failed photo is reported but doesn't undo the publish.
-      let published = game;
+      const isEdit = Boolean(editing);
+      const saved = isEdit ? await updateGame(editing.id, draft) : await createGame(draft);
+      if (!saved) throw new Error('not_found');
+
+      // The image rides along after an edit too, since the upload path needs the
+      // game id and an edit doesn't change it. A failed photo is reported but
+      // never rolls back the metadata change the player just made.
+      let published = saved;
       if (pendingThumb) {
         try {
-          await uploadThumb(game.id, pendingThumb.blob);
-          published = { ...game, thumbKey: 'uploaded' };
+          await uploadThumb(saved.id, pendingThumb.blob);
+          published = { ...saved, thumbKey: 'uploaded' };
         } catch (err) {
-          setError(`Game published, but the photo failed: ${describeError(err)}`);
+          setError(`Saved, but the photo failed: ${describeError(err)}`);
         }
         clearPendingImage();
       }
 
+      remember(published);
+      setEditing(null);
       setTitle('');
       setDescription('');
       setTagsRaw('');
-      remember(published);
-      onCreated?.(published);
+      if (isEdit) onUpdated?.(published);
+      else onCreated?.(published);
     } catch (err) {
       setError(describeError(err));
     } finally {
       setBusy(false);
     }
+  }
+
+  // Prefill the form from an existing game. The photo is deliberately NOT put
+  // into `pendingThumb` — that holds an unsaved local file, and copying an
+  // already-uploaded URL into it would re-upload the image on save.
+  function startEdit(game) {
+    setEditing(game);
+    setTitle(game.title);
+    setDescription(game.description);
+    setTagsRaw((game.categories || []).join(', '));
+    setType(game.type);
+    setMode(game.mode);
+    setError('');
+    clearPendingImage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setTitle('');
+    setDescription('');
+    setTagsRaw('');
+    setError('');
+    clearPendingImage();
   }
 
   async function handleStripPhoto(game) {
@@ -297,10 +334,11 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
 
       <div className="wb-create-grid">
         <form className="wb-create-form" onSubmit={handleSubmit} noValidate>
-          <h2>Create a game</h2>
+          <h2>{editing ? 'Edit game' : 'Create a game'}</h2>
           <p className="wb-create-lede">
-            Describe it, pick how it should look, and publish it to the library.
-            You can delete it whenever you like.
+            {editing
+              ? `Editing “${editing.title}”. Changes go live for everyone immediately.`
+              : 'Describe it, pick how it should look, and publish it to the library. You can edit or delete it later.'}
           </p>
 
           {error && <div className="wb-modal-error" role="alert">{error}</div>}
@@ -369,7 +407,9 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
               />
             </div>
             <span className="wb-field-hint">
-              Optional. Cropped and compressed in your browser — nothing is uploaded at full size.
+              {editing
+                ? 'Replaces the current thumbnail when you save.'
+                : 'Optional. Cropped and compressed in your browser.'}
             </span>
           </label>
 
@@ -415,9 +455,21 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
             </div>
           )}
 
-          <button type="submit" className="wb-signin-btn" disabled={busy}>
-            {busy ? 'Publishing…' : 'Publish game'}
-          </button>
+          <div className="wb-form-actions">
+            <button type="submit" className="wb-signin-btn" disabled={busy}>
+              {busy ? 'Saving…' : (editing ? 'Save changes' : 'Publish game')}
+            </button>
+            {editing && (
+              <button
+                type="button"
+                className="wb-form-cancel"
+                onClick={cancelEdit}
+                disabled={busy}
+              >
+                Cancel edit
+              </button>
+            )}
+          </div>
         </form>
 
         <aside className="wb-create-preview">
@@ -463,22 +515,31 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
                   <strong>{game.title}</strong>
                   <span>{game.description}</span>
                 </div>
-                {game.thumbKey && (
+                <div className="wb-mine-actions">
+                  {game.thumbKey && (
+                    <button
+                      type="button"
+                      className="wb-mine-action"
+                      onClick={() => handleStripPhoto(game)}
+                    >
+                      Remove photo
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="wb-mine-action"
-                    onClick={() => handleStripPhoto(game)}
+                    onClick={() => startEdit(game)}
                   >
-                    Remove photo
+                    Edit
                   </button>
-                )}
-                <button
-                  type="button"
-                  className="wb-mine-delete"
-                  onClick={() => handleDelete(game)}
-                >
-                  Delete
-                </button>
+                  <button
+                    type="button"
+                    className="wb-mine-delete"
+                    onClick={() => handleDelete(game)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
