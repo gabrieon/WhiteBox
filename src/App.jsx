@@ -5,6 +5,7 @@ import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import CreateGame from './components/CreateGame.jsx';
+import SessionDebug from './components/SessionDebug.jsx';
 import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
@@ -596,6 +597,8 @@ export default function App() {
           </>
         )}
       </main>
+      {/* Renders nothing unless the URL carries ?debug=session. */}
+      <SessionDebug />
     </div>
   );
 }

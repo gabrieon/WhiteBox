@@ -1421,3 +1421,89 @@
   align-items: center;
   gap: 4px;
 }
+
+/* --- Session debug panel -------------------------------------------------
+   Only rendered with ?debug=session. Deliberately plain and dense: this is a
+   diagnostic readout, not a feature. */
+
+.wb-dbg {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 999;
+  width: min(420px, calc(100vw - 24px));
+  max-height: 78vh;
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.wb-dbg h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wb-dbg section {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.wb-dbg section:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+
+.wb-dbg h4 {
+  margin: 0 0 6px;
+  opacity: 0.6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wb-dbg-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 0;
+}
+
+.wb-dbg-label { opacity: 0.65; }
+
+.wb-dbg-value {
+  text-align: right;
+  word-break: break-word;
+}
+
+.wb-dbg-value.is-ok { color: #1f7a3d; font-weight: 700; }
+.wb-dbg-value.is-warn { color: #a86300; font-weight: 700; }
+.wb-dbg-value.is-bad { color: #c02626; font-weight: 700; }
+
+.wb-dbg-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-dbg-event { padding: 1px 0; }
+
+.wb-dbg-event.is-bad { color: #c02626; }
+
+.wb-dbg-event code { opacity: 0.5; }
+.wb-dbg-event .ok { color: #1f7a3d; }
+.wb-dbg-event .bad { color: #c02626; }
+
+.wb-dbg-empty { margin: 0; opacity: 0.5; }
+
+.wb-dbg-hint { margin: 0 0 6px; opacity: 0.75; }
+.wb-dbg-hint-list { margin: 0; padding-left: 16px; opacity: 0.8; }
+.wb-dbg-hint-list li { margin-bottom: 4px; }

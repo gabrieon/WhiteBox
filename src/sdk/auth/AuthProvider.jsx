@@ -10,6 +10,7 @@ import {
   signOut as apiSignOut,
   isConfigured,
 } from './authClient.js';
+import { recordAuthEvent, recordAuthError } from './sessionDiagnostics.js';
 import { AuthContext, AuthStatus } from './authContext.js';
 
 // Session state is shared across the app: the header shows the account menu,
@@ -63,8 +64,10 @@ function SupabaseAuthProvider({ children }) {
     // getSession() rehydrates after a reload; onAuthStateChange covers sign-in,
     // token refresh, and sign-out from any tab.
     supabase.auth.getSession().then(({ data, error: err }) => {
+      recordAuthEvent('getSession:resolved', data.session);
       if (!alive) return;
       if (err) {
+        recordAuthError('getSession', err);
         setError(err.message);
         setStatus(AuthStatus.ERROR);
         return;
@@ -72,7 +75,8 @@ function SupabaseAuthProvider({ children }) {
       apply(data.session);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      recordAuthEvent(event, session);
       apply(session);
     });
 
