@@ -24,6 +24,7 @@ import orbArenaMp from './orb-arena-mp/manifest.js';
 import orbCollector2d from './orb-collector-2d/manifest.js';
 import orbDuel from './orb-duel/manifest.js';
 import higherLower from './higher-lower/manifest.js';
+import wordLock from './word-lock/manifest.js';
 
 const registry = new Map();
 
@@ -66,7 +67,11 @@ const reactionTest = {
   component: ReactionTest,
 };
 
-const builtIns = [reactionTest, orbArena, orbArenaMp, orbCollector2d, orbDuel, higherLower];
+// Code-split: WORDLOCK ships its own word list and component, so neither is
+// pulled into the library bundle for visitors who never open it.
+wordLock.loader = () => import('./word-lock/WordLock.jsx');
+
+const builtIns = [reactionTest, orbArena, orbArenaMp, orbCollector2d, orbDuel, higherLower, wordLock];
 
 builtIns.forEach(registerGame);
 

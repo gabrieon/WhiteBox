@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../sdk/auth/authContext.js';
-import { fetchCreatedGames, createGame, deleteGame } from '../sdk/games/api.js';
+import { fetchCreatedGames, createGame, deleteGame, uploadThumb, deleteThumb, thumbUrl } from '../sdk/games/api.js';
+import { prepareThumbnail, revokePreview } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
 
 // The Create screen.
@@ -88,6 +89,11 @@ const ERRORS = {
   storage_not_configured: 'Game publishing is not available right now.',
   unauthorized: 'Your session expired. Sign in again and retry.',
   origin_not_allowed: 'This site is not allowed to publish games.',
+  image_not_an_image: 'That file is not an image the browser can read.',
+  image_too_large: 'That image is too large. Try a smaller one.',
+  image_empty: 'That file was empty.',
+  image_encode_failed: 'Could not process that image. Try another.',
+  thumb_not_configured: 'Image uploads are not available right now.',
 };
 
 function describeError(err) {
@@ -110,6 +116,12 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  // Pending thumbnail: compressed in the browser and held here, because a game
+  // only gets an id once it exists. It uploads immediately after the POST.
+  const [pendingThumb, setPendingThumb] = useState(null);
+  const [preparing, setPreparing] = useState(false);
+  const fileRef = useRef(null);
 
   // Games this player has published. Held with the id they were fetched for so
   // a sign-out or an account switch can't show the previous player's list —
@@ -159,6 +171,38 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
     return '';
   }
 
+  async function handlePickImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError('');
+    setPreparing(true);
+    try {
+      // Crop, scale and re-encode before anything leaves the browser — a phone
+      // photo is megabytes, and the Worker caps uploads at 512 KB.
+      const prepared = await prepareThumbnail(file);
+      // Replacing a selection must release the previous preview, or every pick
+      // leaks an object URL for the life of the page.
+      setPendingThumb((prev) => {
+        if (prev) revokePreview(prev.preview);
+        return prepared;
+      });
+    } catch (err) {
+      setError(describeError(err));
+    } finally {
+      setPreparing(false);
+      // Let the same file be picked again after a failure.
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  function clearPendingImage() {
+    setPendingThumb((prev) => {
+      if (prev) revokePreview(prev.preview);
+      return null;
+    });
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     const problem = validate();
@@ -177,15 +221,38 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
         type,
         mode,
       });
+
+      // The image rides along right after the game exists, since the upload path
+      // needs its id. A failed photo is reported but doesn't undo the publish.
+      let published = game;
+      if (pendingThumb) {
+        try {
+          await uploadThumb(game.id, pendingThumb.blob);
+          published = { ...game, thumbKey: 'uploaded' };
+        } catch (err) {
+          setError(`Game published, but the photo failed: ${describeError(err)}`);
+        }
+        clearPendingImage();
+      }
+
       setTitle('');
       setDescription('');
       setTagsRaw('');
-      remember(game);
-      onCreated?.(game);
+      remember(published);
+      onCreated?.(published);
     } catch (err) {
       setError(describeError(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleStripPhoto(game) {
+    try {
+      await deleteThumb(game.id);
+      remember({ ...game, thumbKey: null });
+    } catch (err) {
+      setError(describeError(err));
     }
   }
 
@@ -265,12 +332,57 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
           </label>
 
           <label className="wb-field">
+            <span className="wb-field-label">Thumbnail</span>
+            <div className="wb-upload">
+              {pendingThumb ? (
+                <div className="wb-upload-done">
+                  <img src={pendingThumb.preview} alt="" className="wb-upload-preview" />
+                  <div className="wb-upload-meta">
+                    <span>
+                      {pendingThumb.blob.size < 1024
+                        ? `${pendingThumb.blob.size} B`
+                        : `${Math.round(pendingThumb.blob.size / 1024)} KB`}
+                      {' · '}
+                      {pendingThumb.width}×{pendingThumb.height}
+                    </span>
+                    <button type="button" className="wb-upload-clear" onClick={clearPendingImage}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="wb-upload-pick"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={preparing}
+                >
+                  {preparing ? 'Processing…' : 'Choose an image'}
+                </button>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="wb-upload-input"
+                onChange={handlePickImage}
+              />
+            </div>
+            <span className="wb-field-hint">
+              Optional. Cropped and compressed in your browser — nothing is uploaded at full size.
+            </span>
+          </label>
+
+          <label className="wb-field">
             <span className="wb-field-label">Artwork</span>
             <select value={type} onChange={(e) => setType(e.target.value)}>
               {ART_CHOICES.map((choice) => (
                 <option key={choice.id} value={choice.id}>{choice.label}</option>
               ))}
             </select>
+            <span className="wb-field-hint">
+              Used as the fallback whenever there is no photo.
+            </span>
           </label>
 
           <label className="wb-field">
@@ -312,7 +424,7 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
           <span className="wb-field-label">Preview</span>
           <div className="wb-card is-playable">
             <div className="wb-card-media-preview">
-              <GameArt type={type} />
+              <GameArt type={type} thumb={pendingThumb?.preview || null} />
             </div>
             <div className="wb-card-foot">
               <h3 className="wb-card-title">{cleanText(title) || 'Your game'}</h3>
@@ -341,11 +453,25 @@ export default function CreateGame({ onCreated, onDeleted, onBack }) {
           <ul className="wb-mine-list">
             {mine.map((game) => (
               <li key={game.id} className="wb-mine-item">
-                <div className="wb-mine-art"><GameArt type={game.type} /></div>
+                <div className="wb-mine-art">
+                  <GameArt
+                    type={game.type}
+                    thumb={game.thumbKey ? thumbUrl(game) : null}
+                  />
+                </div>
                 <div className="wb-mine-body">
                   <strong>{game.title}</strong>
                   <span>{game.description}</span>
                 </div>
+                {game.thumbKey && (
+                  <button
+                    type="button"
+                    className="wb-mine-action"
+                    onClick={() => handleStripPhoto(game)}
+                  >
+                    Remove photo
+                  </button>
+                )}
                 <button
                   type="button"
                   className="wb-mine-delete"

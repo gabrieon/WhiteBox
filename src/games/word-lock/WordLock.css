@@ -1,0 +1,313 @@
+/* WORDLOCK — scoped to its own play surface.
+   The library site is monochrome with one blue accent; this screen is black by
+   design, so it brings its own tokens rather than borrowing --paper/--ink, which
+   would invert to white on the library's dark theme and blow out the contrast
+   the game depends on. */
+
+.wl-root {
+  --wl-green: #3f9142;
+  --wl-green-hi: #4fa84d;
+  --wl-amber: #c9962c;
+  --wl-amber-hi: #e0ae3d;
+  --wl-grey: #2e2e2e;
+  --wl-grey-edge: #3a3a3a;
+  --wl-line: #ffffff26;
+  --wl-text: #f2f2f2;
+  --wl-dim: #9a9a9a;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  padding: 20px 16px 40px;
+  background: #000000;
+  color: var(--wl-text);
+  font-family: var(--font-body, 'Segoe UI', sans-serif);
+}
+
+.wl-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+.wl-logo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.wl-exit {
+  padding: 6px 14px;
+  border: 1px solid var(--wl-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wl-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wl-exit:hover {
+  color: var(--wl-text);
+  border-color: var(--wl-dim);
+}
+
+/* --- board ---------------------------------------------------------------- */
+
+.wl-board-wrap {
+  width: 100%;
+  max-width: 500px;
+}
+
+.wl-board {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wl-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.wl-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 2px solid var(--wl-line);
+  border-radius: 6px;
+  font-size: clamp(20px, 6vw, 32px);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  /* Pop only when a letter actually lands, not on every keystroke. */
+  animation: wl-pop 90ms ease-out;
+}
+
+/* Active row gets a lighter outline so the player can see where they are
+   without any cursor or caret UI. */
+.wl-row.is-active .wl-tile {
+  border-color: #ffffff59;
+}
+
+.wl-tile.has-letter {
+  animation: wl-pop 90ms ease-out;
+}
+
+/* Colour, plus a border treatment. Green and amber differ mainly in hue, which
+   is exactly the distinction red/green colourblindness erases — so the border
+   carries the same information redundantly. */
+.wl-tile.is-correct {
+  border-color: transparent;
+  background: var(--wl-green);
+  animation: wl-flip 520ms ease;
+}
+
+.wl-tile.is-present {
+  border-color: transparent;
+  background: var(--wl-amber);
+  animation: wl-flip 520ms ease;
+}
+
+.wl-tile.is-absent {
+  border-color: var(--wl-grey-edge);
+  background: var(--wl-grey);
+  animation: wl-flip 520ms ease;
+}
+
+.wl-tile.is-shaking {
+  animation: wl-shake 320ms ease;
+}
+
+.wl-legend-item i.wl-swatch.is-correct,
+.wl-swatch.is-correct {
+  border-style: solid;
+}
+
+.wl-swatch.is-present,
+i.wl-swatch.is-present {
+  border-style: dashed;
+}
+
+i.wl-swatch.is-absent,
+.wl-swatch.is-absent {
+  border-style: dotted;
+}
+
+.wl-message {
+  margin: 14px 0 0;
+  text-align: center;
+  color: var(--wl-amber-hi);
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 16px;
+}
+
+/* --- outcome -------------------------------------------------------------- */
+
+.wl-outcome {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--wl-line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.wl-outcome-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wl-outcome-answer {
+  margin: 0 0 16px;
+  color: var(--wl-dim);
+  font-size: 13px;
+}
+
+.wl-outcome-answer strong {
+  color: var(--wl-text);
+  letter-spacing: 0.08em;
+}
+
+.wl-outcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.wl-btn {
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--wl-text);
+  color: #000;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wl-btn.is-ghost {
+  background: transparent;
+  border-color: var(--wl-line);
+  color: var(--wl-text);
+}
+
+/* --- keyboard ------------------------------------------------------------- */
+
+.wl-keys {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 24px;
+}
+
+.wl-key-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.wl-key {
+  flex: 1 1 0;
+  max-width: 44px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 6px;
+  background: #3a3a3a;
+  color: var(--wl-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.wl-key.is-wide {
+  flex: 1.5 1 0;
+  max-width: 66px;
+  font-size: 11px;
+}
+
+.wl-key:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.wl-key.is-correct { background: var(--wl-green); }
+.wl-key.is-present { background: var(--wl-amber); }
+.wl-key.is-absent  { background: #1f1f1f; color: #6d6d6d; }
+
+/* --- legend --------------------------------------------------------------- */
+
+.wl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  margin: 18px 0 0;
+  color: var(--wl-dim);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wl-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.wl-swatch {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--wl-line);
+  border-radius: 2px;
+}
+
+.wl-swatch.is-correct { background: var(--wl-green); }
+.wl-swatch.is-present { background: var(--wl-amber); }
+.wl-swatch.is-absent  { background: var(--wl-grey); }
+
+/* --- motion --------------------------------------------------------------- */
+
+@keyframes wl-pop {
+  0%   { transform: scale(0.86); }
+  100% { transform: scale(1); }
+}
+
+@keyframes wl-flip {
+  0%   { transform: rotateX(0deg); }
+  50%  { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+@keyframes wl-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-5px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-tile,
+  .wl-tile.is-correct,
+  .wl-tile.is-present,
+  .wl-tile.is-absent,
+  .wl-tile.is-shaking {
+    animation: none;
+  }
+}

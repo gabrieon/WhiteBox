@@ -23,7 +23,12 @@ import { GameRoom } from './GameRoom.js';
 import { verifyGoogleIdToken } from './google.js';
 import { readProgress, mergeProgress } from './progress.js';
 import { verifySupabaseToken, bearerToken } from './supabaseAuth.js';
-import { parseCreateGame, listGames, createGame, deleteGame } from './games.js';
+import {
+  parseCreateGame, listGames, createGame, deleteGame, setThumb, getThumbKey,
+} from './games.js';
+import {
+  readUpload, putThumb, getThumb, deleteThumb, thumbKey,
+} from './thumbs.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
@@ -311,9 +316,79 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
-      const removed = await deleteGame(env, deleteMatch[1], user.id);
-      if (!removed) return json({ error: 'not_found' }, 404, authCorsHeaders);
+      const outcome = await deleteGame(env, deleteMatch[1], user.id);
+      if (!outcome.removed) return json({ error: 'not_found' }, 404, authCorsHeaders);
+      // Drop the image too, or deleting a game leaks an object in the bucket
+      // forever with nothing pointing at it.
+      if (outcome.thumbKey) await deleteThumb(env, outcome.thumbKey);
       return json({ ok: true }, 200, authCorsHeaders);
+    }
+
+    // PUT /v1/games/:id/thumb  (raw image bytes as the body)
+    // The browser compresses to JPEG before sending, so this receives a small
+    // file rather than a raw camera photo. Content-Length is checked before the
+    // body is read so an oversized upload is refused rather than buffered.
+    const thumbMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})\/thumb$/);
+    if (thumbMatch && request.method === 'PUT') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+
+      const id = thumbMatch[1];
+      // Prove ownership before spending bandwidth on the image, not after.
+      const owned = await setThumb(env, id, null, user.id);
+      if (!owned) return json({ error: 'not_found' }, 404, authCorsHeaders);
+
+      let upload;
+      try {
+        upload = await readUpload(request);
+      } catch (err) {
+        return json({ error: err?.message || 'image_invalid' }, 400, authCorsHeaders);
+      }
+
+      const key = thumbKey(id);
+      await putThumb(env, key, upload.bytes, upload.contentType);
+      await setThumb(env, id, key, user.id);
+
+      return json({ ok: true, key, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);
+    }
+
+    // DELETE /v1/games/:id/thumb — go back to the generated artwork.
+    if (thumbMatch && request.method === 'DELETE') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const id = thumbMatch[1];
+      const owned = await setThumb(env, id, null, user.id);
+      if (!owned) return json({ error: 'not_found' }, 404, authCorsHeaders);
+      await deleteThumb(env, thumbKey(id));
+      return json({ ok: true }, 200, authCorsHeaders);
+    }
+
+    // GET /v1/thumb/:id — public image bytes.
+    //
+    // Keyed by game id rather than by bucket key so the key layout can change
+    // without breaking links that are already in people's games.
+    const serveMatch = url.pathname.match(/^\/v1\/thumb\/([A-Za-z0-9-]{1,64})$/);
+    if (serveMatch && request.method === 'GET') {
+      const id = serveMatch[1];
+      const key = await getThumbKey(env, id);
+      if (!key) return json({ error: 'not_found' }, 404, cors);
+      const object = await getThumb(env, key);
+      if (!object) return json({ error: 'not_found' }, 404, cors);
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
+          'Cache-Control': 'public, max-age=604800',
+          // Locked down: an image served from the API origin can still be
+          // embedded by any page, so don't let it sniff anything else.
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
     }
 
     // ---- multiplayer -----------------------------------------------------

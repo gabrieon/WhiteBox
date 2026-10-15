@@ -4,7 +4,7 @@
 // rides along automatically and the origin allow-list is enforced the same way.
 // A visitor who isn't signed in can still read the library — creating needs auth.
 
-import { apiFetch } from '../auth/authClient.js';
+import { apiFetch, apiBase } from '../auth/authClient.js';
 
 export async function fetchCreatedGames({ limit = 60 } = {}) {
   const data = await apiFetch(`/v1/games?limit=${encodeURIComponent(limit)}`);
@@ -25,6 +25,31 @@ export async function createGame(draft) {
 
 export async function deleteGame(id) {
   const data = await apiFetch(`/v1/games/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  return Boolean(data?.ok);
+}
+
+/** Public URL for a game's uploaded thumbnail, or null if it has none. */
+export function thumbUrl(game) {
+  return game?.thumbKey ? apiBase() + `/v1/thumb/${encodeURIComponent(game.id)}` : null;
+}
+
+/**
+ * Upload a compressed thumbnail. The body is raw image bytes, so Content-Type is
+ * whatever the blob actually is rather than application/json.
+ */
+export async function uploadThumb(gameId, blob) {
+  const data = await apiFetch(`/v1/games/${encodeURIComponent(gameId)}/thumb`, {
+    method: 'PUT',
+    headers: { 'Content-Type': blob.type || 'image/jpeg' },
+    body: blob,
+  });
+  return Boolean(data?.ok);
+}
+
+export async function deleteThumb(gameId) {
+  const data = await apiFetch(`/v1/games/${encodeURIComponent(gameId)}/thumb`, {
     method: 'DELETE',
   });
   return Boolean(data?.ok);

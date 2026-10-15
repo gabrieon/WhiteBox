@@ -1066,3 +1066,323 @@
   font-size: 13px;
   line-height: 1.6;
 }
+
+/* --- Thumbnail upload ---------------------------------------------------- */
+
+.wb-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wb-upload-pick {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wb-upload-pick:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.wb-upload-pick:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* Visually hidden but still reachable by keyboard and screen readers. */
+.wb-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wb-upload-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.wb-upload-preview {
+  width: 96px;
+  height: 64px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.wb-upload-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  opacity: 0.65;
+  font-size: 11px;
+}
+
+.wb-upload-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.wb-upload-clear:hover {
+  opacity: 1;
+}
+
+.wb-mine-action {
+  flex: none;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.wb-mine-action:hover {
+  opacity: 1;
+  border-color: var(--line);
+}
+
+/* --- Play shell -----------------------------------------------------------
+   Fullscreen overlay inside the SPA. Fixed to the viewport so the library
+   underneath never scrolls or peeks through while a game is open. */
+
+.wb-play {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow-y: auto;
+  background: #000000;
+  color: #f2f2f2;
+  animation: wb-play-in 180ms ease;
+}
+
+@keyframes wb-play-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- splash --------------------------------------------------------------- */
+
+.wb-play-splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 100%;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.wb-play-splash-art {
+  width: min(280px, 60vw);
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.wb-play-splash-art .wb-game-art {
+  height: 100%;
+}
+
+.wb-play-title {
+  margin: 0;
+  font-size: clamp(28px, 8vw, 44px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wb-play-tagline {
+  margin: 0;
+  max-width: 42ch;
+  color: #9a9a9a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.wb-play-cta {
+  margin-top: 14px;
+  padding: 13px 46px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2f2f2;
+  color: #000000;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: transform 170ms ease, opacity 140ms ease;
+}
+
+.wb-play-cta:hover { opacity: 0.88; }
+.wb-play-cta:active { transform: scale(0.97); }
+
+.wb-play-quiet {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: #7a7a7a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.wb-play-quiet:hover { color: #f2f2f2; }
+
+/* --- rules ---------------------------------------------------------------- */
+
+.wb-play-rules {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  min-height: 100%;
+  padding: 40px 24px;
+  cursor: pointer;
+}
+
+.wb-play-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 44ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rule;
+}
+
+.wb-play-rules-list li {
+  position: relative;
+  padding-left: 30px;
+  color: #d4d4d4;
+  font-size: 13px;
+  line-height: 1.6;
+  counter-increment: rule;
+}
+
+.wb-play-rules-list li::before {
+  content: counter(rule);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ffffff2e;
+  border-radius: 50%;
+  color: #9a9a9a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wb-play-rules-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: default;
+}
+
+.wb-play-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #9a9a9a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.wb-play-remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: #f2f2f2;
+  cursor: pointer;
+}
+
+.wb-play-continue {
+  margin: 0;
+  color: #6f6f6f;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- game stage ----------------------------------------------------------- */
+
+.wb-play-stage {
+  min-height: 100%;
+}
+
+.wb-play-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  color: #9a9a9a;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wb-play-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 100%;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.wb-play-error h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.wb-play-error p {
+  margin: 0;
+  max-width: 44ch;
+  color: #9a9a9a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-play { animation: none; }
+}

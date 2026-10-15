@@ -36,6 +36,14 @@ binding = "GAMES"
 database_name = "whitebox-games"
 database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
 
+# Player-uploaded thumbnails. R2 rather than D1: images are binary blobs with no
+# queryable fields, and keeping them out of the database means listing the
+# library never pulls image data through SQLite.
+# Create with:  npx wrangler r2 bucket create whitebox-thumbs
+[[r2_buckets]]
+binding = "THUMBS"
+bucket_name = "whitebox-thumbs"
+
 # Google OAuth. Set with:  npx wrangler secret put GOOGLE_CLIENT_ID
 # (secrets are encrypted; do NOT commit a client id as a plain var)
 

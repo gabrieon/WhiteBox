@@ -5,6 +5,7 @@ import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import CreateGame from './components/CreateGame.jsx';
+import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
@@ -17,8 +18,17 @@ import { fetchCreatedGames } from './sdk/games/api.js';
 // reads what earlier visits stored.
 const PLAYS_KEY = 'whitebox:plays';
 
-function readPlays() {
-  try {
+// Navigation is the URL hash, which is also the single source of truth for the
+// current route: setting it fires `hashchange`, and so does the browser's back
+// and forward buttons. Keeping one mechanism means Back works for free instead
+// of needing a second, hand-rolled history listener.
+function goToHash(hash) {
+  if (window.location.hash === hash) return false;
+  window.location.hash = hash;
+  return true;
+}
+
+function readPlays() {  try {
     const parsed = JSON.parse(window.localStorage.getItem(PLAYS_KEY));
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     const clean = {};
@@ -111,7 +121,18 @@ function ClearIcon() {
 }
 
 export default function App() {
-  const [plays] = useState(readPlays);
+  const [plays, setPlays] = useState(readPlays);
+
+  // Persist whenever the counts change. An effect rather than a write inside the
+  // click handler: the handler may fire several times before React commits, and
+  // writing from the handler would persist stale values.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PLAYS_KEY, JSON.stringify(plays));
+    } catch {
+      // A full or unavailable store shouldn't stop someone playing.
+    }
+  }, [plays]);
   // { [gameId]: savedAt } mirror of locally saved runs. Refreshed whenever
   // the library shows (a game may have saved on exit) and after sign-in pull.
   const [progressAt, setProgressAt] = useState(() => {
@@ -341,11 +362,22 @@ export default function App() {
     return Math.max(opened, saved) || null;
   }, [plays, progressAt]);
 
-  // Two screens: the library and the Create screen. Hash routing keeps both
-  // shareable and back-button friendly without pulling in a router.
-  const [route, setRoute] = useState(() => (
-    window.location.hash === '#/create' ? 'create' : 'library'
-  ));
+  // Three screens: the library, the Create screen, and a fullscreen game. Hash
+  // routing keeps all of them shareable and back-button friendly without
+  // pulling in a router.
+  //
+  // Games live at #/play/<id> on this same origin on purpose. A subdomain would
+  // force a full document load every time the player crossed between the library
+  // and a game, and would throw away scroll position and the loaded bundle.
+  const readRoute = () => {
+    const hash = window.location.hash;
+    if (hash.startsWith('#/play/')) {
+      return { name: 'play', id: hash.slice('#/play/'.length).split('?')[0] };
+    }
+    return { name: hash === '#/create' ? 'create' : 'library' };
+  };
+
+  const [route, setRoute] = useState(readRoute);
 
   const applyHash = useCallback(() => {
     // Refresh saved-run keys on every navigation, in case a game saved (or
@@ -353,7 +385,18 @@ export default function App() {
     const progressMap = listLocalProgress();
     setProgressAt(Object.fromEntries(Object.entries(progressMap).map(([id, entry]) => [id, entry.at])));
 
-    setRoute(window.location.hash === '#/create' ? 'create' : 'library');
+    const next = readRoute();
+    setRoute(next);
+
+    // Count an open here, where the navigation actually lands, rather than on
+    // the click that caused it. That way a shared link, a bookmark or a
+    // back-button return all count as a play too — clicking a card is only one
+    // of the ways in.
+    setPlays((prev) => (
+      next.name !== 'play' || !next.id
+        ? prev
+        : { ...prev, [next.id]: { c: (prev[next.id]?.c || 0) + 1, t: Date.now() } }
+    ));
   }, []);
 
   useEffect(() => {
@@ -376,18 +419,47 @@ export default function App() {
     return () => window.removeEventListener('focus', refresh);
   }, []);
 
-  // The play screen has been removed, so opening a game is intentionally inert
-  // until the new play flow is decided. The capsules stay on the cards so the
-  // layout doesn't need redoing when it is.
-  function openGame() {}
-
-  function navigate(next) {
-    window.location.hash = next === 'create' ? '#/create' : '#/';
+  // Opening a game records it so "Continue Playing" and "Top Played" have
+  // something real to rank. Previously this was an inert stub left over from
+  // when there was no play flow at all.
+  function openGame(gameId) {
+    goToHash(`#/play/${gameId}`);
   }
+
+  function navigate(next, arg) {
+    if (next === 'play') goToHash(`#/play/${arg}`);
+    else if (next === 'create') goToHash('#/create');
+    else goToHash('#/');
+  }
+
+  const exitGame = useCallback(() => goToHash('#/'), []);
+
+  const activeGame = route.name === 'play' ? findGame(route.id) : null;
 
   return (
     <div className="wb-shell">
       <main className="wb-main">
+        {/* A game covers the whole viewport, so the library unmounts rather
+            than sitting underneath it. */}
+        {route.name === 'play' && (
+          activeGame
+            ? <PlayShell manifest={activeGame} onExit={exitGame} />
+            : (
+              <div className="wb-play-error">
+                <h2>Game not found</h2>
+                <p>
+                  There is no game called &ldquo;{route.id}&rdquo; any more. It may
+                  have been removed since this link was made.
+                </p>
+                <button type="button" className="wb-play-quiet" onClick={exitGame}>
+                  Back to games
+                </button>
+              </div>
+            )
+        )}
+
+        {route.name !== 'play' && (
+          <>
         <header className="wb-header">
           <h1 className="wb-brand">
             <a href="#/">WhiteBox</a>
@@ -426,7 +498,7 @@ export default function App() {
           </div>
         </header>
 
-        {route === 'create' ? (
+        {route.name === 'create' ? (
           <CreateGame
             onBack={() => navigate('library')}
             onCreated={refreshCreated}
@@ -524,6 +596,8 @@ export default function App() {
             </div>
           )}
         </section>
+          </>
+        )}
           </>
         )}
       </main>

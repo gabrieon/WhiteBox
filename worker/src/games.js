@@ -121,6 +121,9 @@ function rowToGame(row) {
     creatorId: row.creator_id,
     creatorName: row.creator_name || null,
     createdAt: row.created_at,
+    // Set when the player uploaded a photo instead of taking the generated SVG
+    // artwork. Null means "use GameArt", which is the default.
+    thumbKey: row.thumb_key || null,
     // A created game has metadata but no engine attached yet. Marking it
     // unplayable is what puts the "Soon" badge on the card, so the library
     // never implies you can launch something that has no code.
@@ -191,15 +194,50 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creator_id: creatorId,
     creator_name: creatorName || null,
     created_at: createdAt,
+    thumb_key: null,
   });
 }
 
+/**
+ * Attach an uploaded thumbnail to a game the caller owns.
+ *
+ * Ownership is enforced in the UPDATE itself, so this returns false both when the
+ * game doesn't exist and when it belongs to someone else — the two cases are
+ * deliberately indistinguishable to the caller.
+ */
+export async function setThumb(env, gameId, key, creatorId) {
+  if (!env.GAMES) throw new ValidationError('storage_not_configured');
+  const result = await env.GAMES.prepare(
+    'UPDATE games SET thumb_key = ? WHERE id = ? AND creator_id = ?',
+  ).bind(key, gameId, creatorId).run();
+  return (result.meta?.changes ?? 0) > 0;
+}
+
+export async function getThumbKey(env, gameId) {
+  if (!env.GAMES) return null;
+  const row = await env.GAMES.prepare(
+    'SELECT thumb_key FROM games WHERE id = ?',
+  ).bind(gameId).first();
+  return row?.thumb_key || null;
+}
+
 export async function deleteGame(env, id, creatorId) {
-  if (!env.GAMES) return false;
+  if (!env.GAMES) return { removed: false, thumbKey: null };
+
+  // Read the key before deleting: afterwards the row is gone and there is no way
+  // to know which object in the bucket is now orphaned.
+  const row = await env.GAMES.prepare(
+    'SELECT thumb_key FROM games WHERE id = ? AND creator_id = ?',
+  ).bind(id, creatorId).first();
+
   // creator_id in the WHERE clause is the authorization check: a player can only
   // ever delete their own game, regardless of what id they send.
   const result = await env.GAMES.prepare(
     'DELETE FROM games WHERE id = ? AND creator_id = ?',
   ).bind(id, creatorId).run();
-  return (result.meta?.changes ?? 0) > 0;
+
+  return {
+    removed: (result.meta?.changes ?? 0) > 0,
+    thumbKey: row?.thumb_key || null,
+  };
 }
