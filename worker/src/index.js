@@ -28,28 +28,34 @@ import {
   parseCreateGame, listGames, createGame, updateGame, deleteGame,
   setThumb, getThumbKey, ownsGame,
 } from './games.js';
-import {
-  readUpload, putThumb, getThumb, deleteThumb, thumbKey,
-} from './thumbs.js';
+// Thumbnail bytes come in raw (no multipart, no base64) and are validated here
+// before anything is forwarded to storage.
+import { readUpload } from './thumbs.js';
+import { putThumb, deleteThumb, thumbKey } from './thumbStore.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
  * session token (`Authorization: Bearer …`) or the legacy cookie session.
  * Returns null when neither verifies.
+ *
+ * The raw Supabase `token` is carried through because thumbnail uploads are
+ * forwarded to Supabase Storage under the player's own session — our RLS
+ * policies decide what they may write, so the Worker claims no authority of its
+ * own and needs no service-role secret.
  */
 async function resolveUser(env, request) {
   const token = bearerToken(request);
   if (token) {
     try {
       const { userId, name } = await verifySupabaseToken(token, env);
-      return { id: userId, name: name || null };
+      return { id: userId, name: name || null, token };
     } catch {
       return null;
     }
   }
   const found = await readSession(env, request);
   return found
-    ? { id: found.record.googleSub, name: found.record.name || found.record.email || null }
+    ? { id: found.record.googleSub, name: found.record.name || found.record.email || null, token: null }
     : null;
 }
 
@@ -348,9 +354,15 @@ async function handleRequest(request, env) {
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
       const outcome = await deleteGame(env, deleteMatch[1], user.id);
       if (!outcome.removed) return json({ error: 'not_found' }, 404, authCorsHeaders);
-      // Drop the image too, or deleting a game leaks an object in the bucket
+      // Drop the image too, or deleting a game leaks an object in storage
       // forever with nothing pointing at it.
-      if (outcome.thumbKey) await deleteThumb(env, outcome.thumbKey);
+      if (outcome.thumbKey) {
+        try {
+          await deleteThumb(env, outcome.thumbKey, user.token);
+        } catch (err) {
+          console.error('[whitebox-mp] thumbnail cleanup failed', outcome.thumbKey, err?.message);
+        }
+      }
       return json({ ok: true }, 200, authCorsHeaders);
     }
 
@@ -383,14 +395,19 @@ async function handleRequest(request, env) {
       }
 
       const key = thumbKey(id);
+      let stored;
       try {
-        await putThumb(env, key, upload.bytes, upload.contentType);
+        stored = await putThumb(env, key, upload.bytes, upload.contentType, user.token);
       } catch (err) {
+        // Storage is a separate service and can be misconfigured independently
+        // of this Worker, so report the real reason rather than a generic
+        // failure — otherwise "photos silently don't work" is all the player
+        // ever learns.
         return json({ error: err?.message || 'storage_not_configured' }, 503, authCorsHeaders);
       }
       await setThumb(env, id, key, user.id);
 
-      return json({ ok: true, key, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);
+      return json({ ok: true, key, url: stored.url, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);
     }
 
     // DELETE /v1/games/:id/thumb — go back to the generated artwork.
@@ -400,33 +417,24 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+
       const id = thumbMatch[1];
+      // Read the current key first: after clearing thumb_key there is no way to
+      // know which object to remove from storage.
+      const previousKey = await getThumbKey(env, id);
       const owned = await setThumb(env, id, null, user.id);
       if (!owned) return json({ error: 'not_found' }, 404, authCorsHeaders);
-      await deleteThumb(env, thumbKey(id));
-      return json({ ok: true }, 200, authCorsHeaders);
-    }
 
-    // GET /v1/thumb/:id — public image bytes.
-    //
-    // Keyed by game id rather than by bucket key so the key layout can change
-    // without breaking links that are already in people's games.
-    const serveMatch = url.pathname.match(/^\/v1\/thumb\/([A-Za-z0-9-]{1,64})$/);
-    if (serveMatch && request.method === 'GET') {
-      const id = serveMatch[1];
-      const key = await getThumbKey(env, id);
-      if (!key) return json({ error: 'not_found' }, 404, cors);
-      const object = await getThumb(env, key);
-      if (!object) return json({ error: 'not_found' }, 404, cors);
-      return new Response(object.body, {
-        headers: {
-          'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
-          'Cache-Control': 'public, max-age=604800',
-          // Locked down: an image served from the API origin can still be
-          // embedded by any page, so don't let it sniff anything else.
-          'X-Content-Type-Options': 'nosniff',
-        },
-      });
+      if (previousKey) {
+        // Storage cleanup is best-effort. The reference is already gone, so a
+        // failure here leaves an orphan rather than a broken game.
+        try {
+          await deleteThumb(env, previousKey, user.token);
+        } catch (err) {
+          console.error('[whitebox-mp] thumbnail delete failed', previousKey, err?.message);
+        }
+      }
+      return json({ ok: true }, 200, authCorsHeaders);
     }
 
     // ---- multiplayer -----------------------------------------------------

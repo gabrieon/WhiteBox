@@ -36,21 +36,18 @@ binding = "GAMES"
 database_name = "whitebox-games"
 database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
 
-# Player-uploaded thumbnails. R2 rather than D1: images are binary blobs with no
-# queryable fields, and keeping them out of the database means listing the
-# library never pulls image data through SQLite.
+# Player-uploaded thumbnails. Stored in Supabase Storage (bucket `game-thumbs`)
+# rather than in D1, because images are binary blobs with no queryable fields —
+# keeping them out of the database means listing the library never pulls image
+# data through SQLite.
 #
-# TEMPORARILY DISABLED: a Worker cannot deploy while it declares a bucket that
-# does not exist, and R2 is still switched off on this account. Until it is
-# enabled, photo uploads return 503 storage_not_configured and the UI shows
-# "Image uploads are not available right now" — every other feature is
-# unaffected, and thumbs.js already handles a missing binding.
+# Bucket + RLS policies: worker/supabase-storage-setup.sql (run once).
+# Uploads are forwarded under the player's own Supabase session token, so there
+# is no service-role secret in this Worker.
 #
-# To restore, enable R2 in the Cloudflare dashboard, then uncomment:
-#
-#   [[r2_buckets]]
-#   binding = "THUMBS"
-#   bucket_name = "whitebox-thumbs"
+# An earlier revision used Cloudflare R2. It was never switched on for this
+# account, and waiting on that dashboard toggle blocked the feature entirely, so
+# the storage adapter now targets the Supabase project that already exists.
 
 # Google OAuth. Set with:  npx wrangler secret put GOOGLE_CLIENT_ID
 # (secrets are encrypted; do NOT commit a client id as a plain var)
@@ -64,6 +61,9 @@ database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
 # Comma-separated. Localhost dev origins are always allowed.
 [vars]
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelyknown.in,https://www.rarelyknown.in"
+# Supabase Storage bucket holding player-uploaded thumbnails. Must match the
+# bucket created by worker/supabase-storage-setup.sql.
+THUMBS_BUCKET = "game-thumbs"
 
 [observability]
 enabled = true

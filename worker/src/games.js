@@ -38,6 +38,8 @@ function stripControlChars(value) {
 
 class ValidationError extends Error {}
 
+import { publicUrl } from './thumbStore.js';
+
 function cleanText(value, { max, field, required }) {
   if (value === undefined || value === null) {
     if (required) throw new ValidationError(`${field}_required`);
@@ -102,7 +104,7 @@ export function parseCreateGame(body) {
   };
 }
 
-function rowToGame(row) {
+function rowToGame(row, env) {
   let categories = [];
   try {
     const parsed = JSON.parse(row.categories);
@@ -110,6 +112,11 @@ function rowToGame(row) {
   } catch {
     // A row whose tags are unreadable should still render — fall back to none.
   }
+
+  // The bucket is public, so the browser can load the image straight from
+  // storage. Proxying through the Worker would only add a hop and spend
+  // request quota transferring bytes Cloudflare could serve for free.
+  const thumbKeyValue = row.thumb_key || null;
 
   return {
     id: row.id,
@@ -123,7 +130,8 @@ function rowToGame(row) {
     createdAt: row.created_at,
     // Set when the player uploaded a photo instead of taking the generated SVG
     // artwork. Null means "use GameArt", which is the default.
-    thumbKey: row.thumb_key || null,
+    thumbKey: thumbKeyValue,
+    thumbUrl: thumbKeyValue ? publicUrl(env, thumbKeyValue) : null,
     // A created game has metadata but no engine attached yet. Marking it
     // unplayable is what puts the "Soon" badge on the card, so the library
     // never implies you can launch something that has no code.
@@ -146,7 +154,7 @@ export async function listGames(env, { limit = 60, creatorId = null } = {}) {
       'SELECT * FROM games ORDER BY created_at DESC LIMIT ?',
     ).bind(size).all();
 
-  return (result.results || []).map(rowToGame);
+  return (result.results || []).map((row) => rowToGame(row, env));
 }
 
 /**
@@ -195,7 +203,7 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creator_name: creatorName || null,
     created_at: createdAt,
     thumb_key: null,
-  });
+  }, env);
 }
 
 /**
@@ -223,7 +231,7 @@ export async function updateGame(env, id, draft, creatorId) {
   if ((result.meta?.changes ?? 0) === 0) return null;
 
   const row = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
-  return rowToGame(row);
+  return rowToGame(row, env);
 }
 
 /** True when this creator owns the game. Read-only: never mutates as a side effect. */

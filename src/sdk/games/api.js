@@ -4,7 +4,7 @@
 // rides along automatically and the origin allow-list is enforced the same way.
 // A visitor who isn't signed in can still read the library — creating needs auth.
 
-import { apiFetch, apiBase } from '../auth/authClient.js';
+import { apiFetch } from '../auth/authClient.js';
 
 export async function fetchCreatedGames({ limit = 60 } = {}) {
   const data = await apiFetch(`/v1/games?limit=${encodeURIComponent(limit)}`);
@@ -39,9 +39,14 @@ export async function updateGame(id, draft) {
   return data.game;
 }
 
-/** Public URL for a game's uploaded thumbnail, or null if it has none. */
+/**
+ * URL for a game's uploaded thumbnail, or null when it has none.
+ *
+ * The Worker returns a ready-made public storage URL on every game, so there is
+ * nothing to construct here and no key layout to know about.
+ */
 export function thumbUrl(game) {
-  return game?.thumbKey ? apiBase() + `/v1/thumb/${encodeURIComponent(game.id)}` : null;
+  return game?.thumbUrl || null;
 }
 
 /**
