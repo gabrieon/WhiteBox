@@ -63,7 +63,7 @@ database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
 # Origins allowed to call the auth endpoints with credentials.
 # Comma-separated. Localhost dev origins are always allowed.
 [vars]
-ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelyknown.in"
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelyknown.in,https://www.rarelyknown.in"
 
 [observability]
 enabled = true

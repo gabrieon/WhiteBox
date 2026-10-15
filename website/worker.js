@@ -33,6 +33,18 @@ export default {
       return Response.redirect(url.toString(), 301);
     }
 
+    // Canonical host. Both rarelyknown.in and www.rarelyknown.in are attached to
+    // this Worker, and to a browser they are two *different origins* — separate
+    // localStorage, separate cookies. Signing in on one and opening the other
+    // therefore looks exactly like being logged out, with nothing visibly wrong.
+    //
+    // Funnelling www to the apex removes that trap, and also means the
+    // Supabase redirect allowlist only has to list one host.
+    if (url.hostname === 'www.rarelyknown.in') {
+      url.hostname = 'rarelyknown.in';
+      return Response.redirect(url.toString(), 301);
+    }
+
     const res = await env.ASSETS.fetch(request);
     const contentType = res.headers.get('Content-Type') || '';
 
