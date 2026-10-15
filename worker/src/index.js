@@ -77,9 +77,15 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://127.0.0.1:4173',
 ];
 
+// `Authorization` must be listed here, not just Content-Type. Supabase sends the
+// session token as a bearer header, which makes every authenticated call a
+// "non-simple" request: the browser preflights it and rejects the whole call if
+// the preflight response doesn't echo the header back. Leaving it out looked
+// fine because simple GETs skip preflight entirely — writes just silently failed
+// in the browser with no useful error.
 const BASE_CORS = {
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
 };
 
