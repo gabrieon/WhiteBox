@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ANSWERS, GUESSES } from './words.js';
+import { DEFINITIONS } from './definitions.js';
 import {
   scoreGuess, keyboardState, isSolved, pickAnswer,
   CORRECT, PRESENT, MAX_GUESSES, WORD_LENGTH,
@@ -26,6 +27,20 @@ const KEY_ROWS = [
 
 const ACTIONS = { ENTER: 'ENTER', BACKSPACE: 'BACKSPACE' };
 
+// How long the clue stays fully visible before it fades. Long enough to read a
+// short definition once, short enough that it is not just the answer on screen.
+const CLUE_HOLD_MS = 5000;
+const CLUE_FADE_MS = 700;
+
+/** mm:ss.mmm — the milliseconds are there because "close" is the whole game. */
+function formatElapsed(ms) {
+  const total = Math.max(0, ms);
+  const m = Math.floor(total / 60000);
+  const s = Math.floor((total % 60000) / 1000);
+  const ms2 = total % 1000;
+  return `${m}:${String(s).padStart(2, '0')}.${String(ms2).padStart(3, '0')}`;
+}
+
 export default function WordLock({ onExit }) {
   // Answer is fixed for the lifetime of a round and never re-rolled, so a
   // re-render can't swap it out from under the player mid-guess.
@@ -36,6 +51,55 @@ export default function WordLock({ onExit }) {
   const [status, setStatus] = useState('playing'); // playing | won | lost
   const [shakeKey, setShakeKey] = useState(0);
   const [message, setMessage] = useState('');
+
+  // --- clue ---------------------------------------------------------------
+  // The definition flashes at the top for five seconds, then fades. The answer
+  // is already chosen and known here, so there is nothing to fetch at runtime.
+  const clue = DEFINITIONS[answer] || null;
+  const [clueState, setClueState] = useState('show'); // show | fade | gone
+
+  useEffect(() => {
+    if (!clue) return undefined;
+    const hide = setTimeout(() => setClueState('fade'), CLUE_HOLD_MS);
+    const drop = setTimeout(() => setClueState('gone'), CLUE_HOLD_MS + CLUE_FADE_MS);
+    return () => { clearTimeout(hide); clearTimeout(drop); };
+  }, [clue]);
+
+  // --- timer --------------------------------------------------------------
+  // Counts UP, not down, and starts on the player's first interaction rather than
+  // on load — a clock ticking before you have read the board only adds pressure
+  // to think, which is the opposite of what this game is for. It is a record of
+  // how long you took, not a limit.
+  const [startedAt, setStartedAt] = useState(null);
+  const [finishedAt, setFinishedAt] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+
+  // The start time lives in a ref as well as in state. State drives the interval
+  // effect, but the ref is what lets `stopClock` read it synchronously from the
+  // keystroke handler without that handler having to depend on it — and an effect
+  // cannot be used to freeze the clock, because setting state in an effect body
+  // is what cascades renders.
+  const startedRef = useRef(null);
+
+  const startClock = useCallback(() => {
+    if (startedRef.current !== null) return;
+    const now = Date.now();
+    startedRef.current = now;
+    setStartedAt(now);
+  }, []);
+
+  const stopClock = useCallback(() => {
+    if (startedRef.current === null) return;
+    const end = Date.now();
+    setFinishedAt(end);
+    setElapsed(end - startedRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (startedAt === null || finishedAt !== null) return undefined;
+    const tick = setInterval(() => setElapsed(Date.now() - startedAt), 37); // ~27fps
+    return () => clearInterval(tick);
+  }, [startedAt, finishedAt]);
 
   // Mirror of `current` for the submit path.
   //
@@ -77,9 +141,14 @@ export default function WordLock({ onExit }) {
     setCurrentWord('');
     setMessage('');
 
-    if (isSolved(verdicts)) setStatus('won');
-    else if (guesses.length + 1 >= MAX_GUESSES) setStatus('lost');
-  }, [answer, guesses.length, locked]);
+    if (isSolved(verdicts)) {
+      setStatus('won');
+      stopClock();
+    } else if (guesses.length + 1 >= MAX_GUESSES) {
+      setStatus('lost');
+      stopClock();
+    }
+  }, [answer, guesses.length, locked, stopClock]);
 
   const backspace = useCallback(() => {
     if (locked) return;
@@ -101,7 +170,10 @@ export default function WordLock({ onExit }) {
     // wrapped or dropped mid-word.
     setCurrentWord(`${currentRef.current}${key}`.slice(0, WORD_LENGTH));
     setMessage('');
-  }, [submit, backspace, locked]);
+    // First keystroke starts the clock. Functional form so `press` keeps its
+    // dependency list stable and doesn't have to be rebuilt when it does.
+    startClock();
+  }, [submit, backspace, locked, startClock]);
 
   // Physical keyboard. Bound on the document rather than the grid so the game
   // works without the player ever clicking it first.
@@ -136,13 +208,30 @@ export default function WordLock({ onExit }) {
 
   return (
     <div className="wl-root">
+      {/* Clue: flashes the definition for five seconds, then fades out. aria-live
+          so a screen reader announces it while it is still visible. */}
+      {clue && clueState !== 'gone' && (
+        <div
+          className={`wl-clue${clueState === 'fade' ? ' is-fading' : ''}`}
+          role="status"
+        >
+          <span className="wl-clue-tag">Clue</span>
+          <span className="wl-clue-text">{clue}</span>
+        </div>
+      )}
+
       <header className="wl-top">
         <h1 className="wl-logo">WORDLOCK</h1>
-        {onExit && (
-          <button type="button" className="wl-exit" onClick={onExit}>
-            Leave
-          </button>
-        )}
+        <div className="wl-top-right">
+          <span className="wl-timer" aria-label="Time taken">
+            {formatElapsed(elapsed)}
+          </span>
+          {onExit && (
+            <button type="button" className="wl-exit" onClick={onExit}>
+              Leave
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="wl-board-wrap">
@@ -199,8 +288,16 @@ export default function WordLock({ onExit }) {
                 : 'Out of tries'}
             </p>
             <p className="wl-outcome-answer">
-              {status === 'won' ? 'The word was ' : 'The word was '}
-              <strong>{answer}</strong>
+              The word was <strong>{answer}</strong>
+            </p>
+            {clue && (
+              <p className="wl-outcome-clue">
+                <em>{clue}</em>
+                <span className="wl-credit">Definition from Wiktionary (CC BY-SA)</span>
+              </p>
+            )}
+            <p className="wl-outcome-answer">
+              Time taken <strong>{formatElapsed(elapsed)}</strong>
             </p>
             <div className="wl-outcome-actions">
               <button

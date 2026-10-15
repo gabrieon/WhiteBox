@@ -311,3 +311,83 @@ i.wl-swatch.is-absent,
     animation: none;
   }
 }
+
+/* --- Clue banner ---------------------------------------------------------- */
+
+.wl-clue {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 14px;
+  padding: 11px 14px;
+  border: 1px solid var(--wl-line);
+  border-radius: 10px;
+  background: #111111;
+  transition: opacity 700ms ease, transform 700ms ease;
+}
+
+.wl-clue.is-fading {
+  opacity: 0;
+  transform: translateY(-6px);
+  /* Keep it in the layout while fading so the board doesn't jump upward the
+     instant it disappears. */
+  pointer-events: none;
+}
+
+.wl-clue-tag {
+  flex: none;
+  color: #6f6f6f;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.wl-clue-text {
+  color: #dcdcdc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.wl-credit {
+  display: block;
+  margin-top: 6px;
+  color: #6f6f6f;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.wl-outcome-clue {
+  margin: 0 0 12px;
+  color: #9a9a9a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.wl-outcome-clue em {
+  color: #dcdcdc;
+  font-style: italic;
+}
+
+/* --- Timer ---------------------------------------------------------------- */
+
+.wl-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wl-timer {
+  /* Tabular figures stop the digits jittering as the hundredths tick over. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  color: var(--wl-dim);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-clue { transition-duration: 1ms; }
+}

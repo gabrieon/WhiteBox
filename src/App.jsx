@@ -6,6 +6,8 @@ import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import CreateGame from './components/CreateGame.jsx';
 import SessionDebug from './components/SessionDebug.jsx';
+import Footer from './components/Footer.jsx';
+import WhiteBoxMark from './components/WhiteBoxMark.jsx';
 import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
@@ -458,9 +460,15 @@ export default function App() {
           <>
         <header className="wb-header">
           <h1 className="wb-brand">
-            <a href="#/">WhiteBox</a>
+            <a href="#/" className="wb-brand-link"><WhiteBoxMark size={22} />WhiteBox</a>
           </h1>
           <div className="wb-header-search">
+            <span className="wb-search-icon" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.6-3.6" />
+              </svg>
+            </span>
             <input
               ref={searchRef}
               type="search"
@@ -597,6 +605,23 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* Footer sits outside the play overlay so it never renders under a game. */}
+      {route.name !== 'play' && (
+        <Footer
+          categories={categoryList}
+          onNavigate={(target) => {
+            if (target === 'create') {
+              navigate('create');
+              return;
+            }
+            setCategory(target);
+            setQuery('');
+            navigate('library');
+          }}
+        />
+      )}
+
       {/* Renders nothing unless the URL carries ?debug=session. */}
       <SessionDebug />
     </div>

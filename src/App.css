@@ -167,21 +167,57 @@
 }
 
 /* Sign-in trigger. A capsule to match the header's other controls. */
+/* Sign-in trigger: a glass capsule. The gradient is fixed rather than derived
+   from the theme so the control keeps the same sheen in both — it is the one
+   element on the page that is allowed to look like glass rather than paper. */
 .wb-signin-btn {
-  min-height: 34px;
-  padding: 0 16px;
-  border: 1px solid transparent;
+  position: relative;
+  min-height: 36px;
+  padding: 0 18px;
+  border: 1px solid var(--glass-edge);
   border-radius: 999px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--glass-fill);
+  color: var(--ink);
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
-  transition: background-color 140ms ease, transform 170ms ease;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  isolation: isolate;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 6px 18px -10px var(--glass-shadow);
+  transition: transform 170ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+/* The sheen. A skewed highlight sweeping across on hover is what sells "glass"
+   more than the blur does on its own. */
+.wb-signin-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    var(--glass-sheen) 45%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wb-signin-btn:hover::before {
+  transform: translateX(120%);
 }
 
 .wb-signin-btn:hover {
-  background: var(--red-hover);
+  border-color: var(--glass-edge-hover);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 24px -12px var(--glass-shadow);
 }
 
 .wb-signin-btn:active {
@@ -1508,3 +1544,182 @@
 .wb-dbg-hint-list { margin: 0; padding-left: 16px; opacity: 0.8; }
 .wb-dbg-hint-list li { margin-bottom: 4px; }
 .wb-dbg, .wb-dbg * { box-sizing: border-box; }
+
+/* --- Search icon ---------------------------------------------------------- */
+
+.wb-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--dim);
+  pointer-events: none;
+  transition: color 140ms ease;
+}
+
+/* :focus-within on the wrapper, not :focus + sibling on the input — the icon
+   is rendered BEFORE the input so it can sit under the text. */
+.wb-header-search:focus-within .wb-search-icon {
+  color: var(--ink);
+}
+
+/* Indent the text to clear the icon. */
+.wb-search {
+  padding-left: 33px;
+}
+
+/* --- Glass tokens ---------------------------------------------------------
+   Declared per theme so the capsule reads as the same material on white and on
+   black rather than inverting into a dark blob on the dark theme. */
+
+:root,
+[data-theme='light'] {
+  --glass-fill: linear-gradient(150deg, #ffffffcc, #f0f0f0e6 55%, #ffffffb8);
+  --glass-edge: #ffffff;
+  --glass-edge-hover: #11111133;
+  --glass-highlight: #ffffff;
+  --glass-sheen: #ffffffb3;
+  --glass-shadow: #11100040;
+}
+
+[data-theme='dark'] {
+  --glass-fill: linear-gradient(150deg, #2a2a2ae6, #1a1a1af2 55%, #262626e0);
+  --glass-edge: #ffffff26;
+  --glass-edge-hover: #ffffff59;
+  --glass-highlight: #ffffff1f;
+  --glass-sheen: #ffffff14;
+  --glass-shadow: #0000009e;
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.wb-footer {
+  margin-top: 64px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+
+/* A hairline that fades out at both ends - a rule that stops rather than one
+   that runs edge to edge. */
+.wb-footer-rule {
+  height: 1px;
+  margin-bottom: 26px;
+  background: linear-gradient(90deg, transparent, var(--line) 18%, var(--line) 82%, transparent);
+}
+
+.wb-footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .wb-footer-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 460px) {
+  .wb-footer-grid { grid-template-columns: 1fr; }
+}
+
+.wb-footer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.wb-footer-tag {
+  margin: 10px 0 12px;
+  max-width: 34ch;
+  opacity: 0.6;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.wb-footer-mail {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+  opacity: 0.8;
+}
+
+.wb-footer-mail:hover { opacity: 1; }
+
+.wb-footer-col h4 {
+  margin: 0 0 10px;
+  opacity: 0.5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wb-footer-col ul {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-footer-col a,
+.wb-footer-link {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  opacity: 0.72;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.wb-footer-col a:hover,
+.wb-footer-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.wb-footer-stat {
+  margin: 0 0 6px;
+  opacity: 0.72;
+  font-size: 12px;
+}
+
+.wb-footer-stat strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.wb-footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  opacity: 0.5;
+  font-size: 11px;
+}
+
+.wb-footer-base p { margin: 0; }
+
+.wb-footer-base a {
+  color: inherit;
+  text-decoration: underline;
+}
