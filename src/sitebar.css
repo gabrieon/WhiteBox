@@ -59,12 +59,40 @@
   --sitebar-fill: #ffffffe0;
   --sitebar-edge: #00000014;
   --sitebar-highlight: #ffffffcc;
+  --search-fill: #ebebeb;
+  --search-fill-hover: #e2e2e2;
+  --search-edge: #00000024;
 }
 
 [data-theme='dark'] {
   --sitebar-fill: #1c1c1ce0;
   --sitebar-edge: #ffffff14;
   --sitebar-highlight: #ffffff10;
+  /* Darker than the bar's #1c1c1c, so the field reads as a recessed well. */
+  --search-fill: #121212;
+  --search-fill-hover: #0a0a0a;
+  --search-edge: #ffffff2e;
+}
+
+/* --- Search field in the bar ------------------------------------------------
+   The field used to be filled with --fill, which on the dark theme is #1c1c1c —
+   the exact colour the bar composites to over #0b0b0b. Same fill, no edge, so the
+   control vanished into the bar it sits on.
+
+   Fixed on both axes rather than one: the fill moves off the bar's colour in
+   each theme, and a hairline edge marks the boundary even where the two fills
+   are close. The fill alone would be too subtle on the light theme, where the
+   bar is already near-white; the edge alone would be too faint on dark. */
+.wb-sitebar .wb-search {
+  box-sizing: border-box;
+  border: 1px solid var(--search-edge);
+  background: var(--search-fill);
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.wb-sitebar .wb-search:hover:not(:focus) {
+  background: var(--search-fill-hover);
+  border-color: var(--search-edge);
 }
 
 .wb-sitebar .wb-brand {
