@@ -17,11 +17,9 @@
      2. a saturation boost, because the blur mixes neighbouring colours toward
         grey; lifting saturation puts that colour back
 
-     3. a LOW-alpha fill — the one that matters most here. The bar is pinned to
-        the top of a mostly-empty page, so on load it has only flat page colour
-        to sit over, and blurring a flat colour just returns a flat colour. The
-        gradient and edge highlight therefore carry the "pane of glass" signal
-        on their own. A near-opaque fill would hide the blur for no gain.
+     3. a LOW-alpha fill — a near-opaque fill would hide the blur entirely for
+        no gain. Flat, not gradient: the bar sits over the page, and a vertical
+        ramp only reads as a lighting effect you cannot locate a source for.
 
      4. a hairline edge plus an inner highlight, which is what sells a physical
         edge catching light.
@@ -41,9 +39,6 @@
   padding: 8px clamp(12px, 3vw, 22px);
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--sitebar-edge);
-  /* A vertical gradient rather than a flat fill: it implies a light source above
-     the bar and a denser base, which is what separates a sheet of glass from a
-     grey strip when there is nothing behind it to refract. */
   background: var(--sitebar-fill);
   /* Standard property ONLY — no -webkit- line here, deliberately.
      The CSS minifier collapses an author-written prefixed declaration down to
@@ -61,15 +56,15 @@
 
 :root,
 [data-theme='light'] {
-  --sitebar-fill: linear-gradient(180deg, #ffffffc4, #ffffff8f);
-  --sitebar-edge: #00000012;
-  --sitebar-highlight: #ffffffe6;
+  --sitebar-fill: #ffffffe0;
+  --sitebar-edge: #00000014;
+  --sitebar-highlight: #ffffffcc;
 }
 
 [data-theme='dark'] {
-  --sitebar-fill: linear-gradient(180deg, #2b2b2bc2, #141414d9);
-  --sitebar-edge: #ffffff1f;
-  --sitebar-highlight: #ffffff1f;
+  --sitebar-fill: #1c1c1ce0;
+  --sitebar-edge: #ffffff14;
+  --sitebar-highlight: #ffffff10;
 }
 
 .wb-sitebar .wb-brand {
@@ -126,144 +121,6 @@
   padding-top: 72px;
 }
 
-/* --- Material 3 search bar ------------------------------------------------
-   The spec's "filled search bar": a 48dp pill in surface-container-high, no
-   outline, a 24dp leading icon in on-surface-variant, and state expressed
-   purely through the container colour. There is deliberately no focus ring —
-   M3 filled fields do not have one, and the container darkening IS the focus
-   affordance. A ring would be the one detail that makes it read as a web input
-   pretending to be Material.
-
-   Colour roles below are the real M3 baseline tonal values, not approximations
-   of the site's paper/ink palette. Using them verbatim is the point: a
-   hand-tuned approximation of a design system stops being the design system. */
-.wb-sitebar .wb-header-search {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 48px;
-  border-radius: 28px;
-  background: var(--m3-surface-container-high);
-  transition: background-color 200ms var(--m3-emphasized);
-}
-
-/* M3 state layer. A separate absolutely-positioned pseudo-element rather than a
-   filter or box-shadow, because the state layer has to composite OVER the
-   container fill but UNDER the text — and it must not swallow clicks, since the
-   input sits on top of it. */
-.wb-sitebar .wb-header-search::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--m3-on-surface);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 200ms var(--m3-emphasized);
-}
-
-/* Hover and focus both resolve to surface-container-highest — that shared
-   "engaged" colour is what makes the field feel like one material reacting to
-   input rather than a box that changes colour at you. */
-.wb-sitebar .wb-header-search:hover {
-  background: var(--m3-surface-container-highest);
-}
-
-.wb-sitebar .wb-header-search:hover::before {
-  opacity: 0.08;
-}
-
-.wb-sitebar .wb-header-search:focus-within {
-  background: var(--m3-surface-container-highest);
-}
-
-.wb-sitebar .wb-header-search:focus-within::before {
-  opacity: 0;
-}
-
-.wb-sitebar .wb-search {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  /* M3 body-large: 16sp on a 24sp line box. Text fields are the one place M3
-     breaks from body-medium, because 14sp is genuinely hard to read while
-     typing. */
-  padding: 0 48px 0 56px;
-  border: 0;
-  border-radius: inherit;
-  background: transparent;
-  color: var(--m3-on-surface);
-  font-size: 16px;
-  line-height: 24px;
-  outline: none;
-  letter-spacing: 0.03125em;
-}
-
-.wb-sitebar .wb-search::placeholder {
-  color: var(--m3-on-surface-variant);
-  opacity: 0.7;
-}
-
-.wb-sitebar .wb-search:hover:not(:focus) {
-  background: transparent;
-}
-
-.wb-sitebar .wb-search:focus {
-  outline: none;
-}
-
-/* 24dp icon in a 16dp inset — the M3 gap between the container edge and a
-   leading icon. */
-.wb-sitebar .wb-search-icon {
-  left: 16px;
-  color: var(--m3-on-surface-variant);
-  transition: color 200ms var(--m3-emphasized);
-}
-
-.wb-sitebar .wb-header-search:focus-within .wb-search-icon {
-  color: var(--m3-primary);
-}
-
-/* Trailing clear button. M3 wants a 48dp touch target around a 24dp glyph; the
-   visual size stays small but the hit area does not, because a 24dp target is
-   below the accessible minimum. */
-.wb-sitebar .wb-search-clear {
-  right: 12px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  color: var(--m3-on-surface-variant);
-  transition:
-    background-color 200ms var(--m3-emphasized),
-    color 200ms var(--m3-emphasized);
-}
-
-.wb-sitebar .wb-search-clear:hover {
-  background: color-mix(in srgb, var(--m3-on-surface) 8%, transparent);
-  color: var(--m3-on-surface);
-}
-
-:root,
-[data-theme='light'] {
-  /* M3 baseline tonal palette, light. */
-  --m3-surface-container-high: #ece6f0;
-  --m3-surface-container-highest: #e6e0e9;
-  --m3-on-surface: #1d1b20;
-  --m3-on-surface-variant: #49454f;
-  --m3-primary: #6750a4;
-  /* Emphasized easing — the M3 standard curve. Slower out, slow in, which is
-     what gives Material its weightier feel compared with a plain ease. */
-  --m3-emphasized: cubic-bezier(0.2, 0, 0, 1);
-}
-
-[data-theme='dark'] {
-  --m3-surface-container-high: #2b2930;
-  --m3-surface-container-highest: #36343b;
-  --m3-on-surface: #e6e0e9;
-  --m3-on-surface-variant: #cac4d0;
-  --m3-primary: #d0bcff;
-}
-
 @media (max-width: 560px) {
   .wb-sitebar {
     gap: 8px;
@@ -278,9 +135,7 @@
   .wb-sitebar .wb-create-btn {
     padding: 0 11px;
   }
-  /* 8 + 48 + 8 + the 1px hairline. The M3 pill is taller than the old field,
-     so the reserved space had to grow with it or the first row tucks under. */
   .wb-shell {
-    padding-top: 66px;
+    padding-top: 64px;
   }
 }
