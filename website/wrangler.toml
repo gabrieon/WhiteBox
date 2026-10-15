@@ -12,4 +12,14 @@ compatibility_date = "2026-01-01"
 
 [assets]
 directory = "../dist"
+# Name the binding explicitly. Without it `env.ASSETS` is undefined once
+# run_worker_first makes the Worker execute, and every request throws.
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+# Run the Worker before the asset binding serves anything.
+#
+# Without this the binding answers asset requests itself and worker.js never
+# executes — so neither the cache headers nor the missing-chunk 404 fix in there
+# ever apply. It is what lets this layer decide how a stale chunk is reported,
+# instead of letting the SPA fallback answer with HTML.
+run_worker_first = true
