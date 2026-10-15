@@ -43,6 +43,7 @@ export function publicUrl(env, key) {
  */
 export async function putThumb(env, key, buffer, contentType, userToken) {
   if (!env.SUPABASE_URL) throw new Error('storage_not_configured');
+  if (!userToken) throw new Error('missing_user_token');
 
   const bucket = env.THUMBS_BUCKET || BUCKET;
   const res = await fetch(
@@ -50,9 +51,16 @@ export async function putThumb(env, key, buffer, contentType, userToken) {
     {
       method: 'POST',
       headers: {
+        // Both headers are required. Storage is a PostgREST service and treats a
+        // request without `apikey` as anonymous even when the Authorization
+        // bearer is a perfectly good user token — which surfaces as a confusing
+        // "violates row-level security policy" rather than "you forgot a header".
+        apikey: env.SUPABASE_ANON_KEY || '',
         Authorization: `Bearer ${userToken}`,
         'Content-Type': contentType,
-        'x-upsert': 'true', // replace an existing object rather than 409 on it
+        // Replace rather than 409 when the object already exists, so re-uploading
+        // a thumbnail overwrites in place instead of accumulating versions.
+        'x-upsert': 'true',
       },
       body: buffer,
     },
@@ -78,7 +86,13 @@ export async function deleteThumb(env, key, userToken) {
 
   const res = await fetch(
     `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/${bucket}/${key}`,
-    { method: 'DELETE', headers: { Authorization: `Bearer ${userToken}` } },
+    {
+      method: 'DELETE',
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY || '',
+        Authorization: `Bearer ${userToken}`,
+      },
+    },
   );
 
   // A missing object is a success for our purposes: the goal was for it not to
