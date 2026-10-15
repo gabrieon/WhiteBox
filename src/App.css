@@ -1065,6 +1065,15 @@
   white-space: nowrap;
 }
 
+.wb-upload-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.wb-upload-clear.is-danger {
+  color: #c02626;
+}
+
 .wb-mine-delete {
   flex: none;
   padding: 6px 12px;

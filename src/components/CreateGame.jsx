@@ -288,9 +288,17 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
   }
 
   async function handleStripPhoto(game) {
+    const ok = window.confirm(
+      `Remove the photo from "${game.title}"? It falls back to the generated artwork.`,
+    );
+    if (!ok) return;
     try {
       await deleteThumb(game.id);
-      remember({ ...game, thumbKey: null });
+      const cleared = { ...game, thumbKey: null, thumbUrl: null };
+      remember(cleared);
+      // The form's "Current photo" tile reads from `editing`, so clearing only
+      // the list entry would leave the removed image still on screen.
+      setEditing((prev) => (prev && prev.id === game.id ? cleared : prev));
     } catch (err) {
       setError(describeError(err));
     }
@@ -385,10 +393,40 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
                         : `${Math.round(pendingThumb.blob.size / 1024)} KB`}
                       {' · '}
                       {pendingThumb.width}×{pendingThumb.height}
+                      {' · '}
+                      replaces current
                     </span>
                     <button type="button" className="wb-upload-clear" onClick={clearPendingImage}>
-                      Remove
+                      Undo
                     </button>
+                  </div>
+                </div>
+              ) : editing?.thumbUrl ? (
+                /* No replacement picked yet, but the game already has a photo.
+                   Showing it is what makes "edit the thumbnail" possible at all —
+                   otherwise the form looks identical to creating a new game and
+                   there is nothing to replace. */
+                <div className="wb-upload-done">
+                  <img src={editing.thumbUrl} alt="" className="wb-upload-preview" />
+                  <div className="wb-upload-meta">
+                    <span>Current photo</span>
+                    <div className="wb-upload-actions">
+                      <button
+                        type="button"
+                        className="wb-upload-clear"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={preparing}
+                      >
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        className="wb-upload-clear is-danger"
+                        onClick={() => handleStripPhoto(editing)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

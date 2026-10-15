@@ -1,0 +1,104 @@
+/* --- Pinned bottom navigation ----------------------------------------------
+   Sits at the bottom of the viewport on every screen size, glass-edged so it
+   separates from the content behind it without a hard border. The page reserves
+   space for it so the last row of game cards is never trapped underneath. */
+
+.wb-bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px clamp(12px, 3vw, 22px);
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--bottombar-edge);
+  background: var(--bottombar-fill);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 -8px 28px -18px var(--glass-shadow);
+}
+
+:root,
+[data-theme='light'] {
+  --bottombar-fill: #ffffffe0;
+  --bottombar-edge: #e3e3e3;
+}
+
+[data-theme='dark'] {
+  --bottombar-fill: #0b0b0be0;
+  --bottombar-edge: #242424;
+}
+
+.wb-bottombar .wb-brand {
+  margin: 0;
+  font-size: 13px;
+}
+
+.wb-bottombar .wb-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.wb-bottombar .wb-header-search {
+  /* Fill the space between brand and actions rather than keeping the old
+     centred fixed width, which looked stranded on a wide bar. */
+  width: 100%;
+  justify-self: stretch;
+}
+
+.wb-bottombar .wb-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-bottombar .wb-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.wb-bottombar .wb-create-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The bar floats over the page, so the last rows need clearance beneath it. */
+.wb-shell {
+  padding-bottom: 76px;
+}
+
+@media (max-width: 560px) {
+  .wb-bottombar {
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  /* Wordmark and button labels drop first; the search box is the one control
+     that genuinely needs the room on a narrow screen. */
+  .wb-create-label {
+    display: none;
+  }
+  .wb-bottombar .wb-create-btn {
+    padding: 0 11px;
+  }
+}

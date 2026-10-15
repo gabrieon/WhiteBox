@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import './bottombar.css';
 import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
@@ -107,6 +108,14 @@ function GameRow({ title, list, emptyHint, onOpen, getMeta }) {
         </div>
       )}
     </section>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
   );
 }
 
@@ -458,10 +467,16 @@ export default function App() {
 
         {route.name !== 'play' && (
           <>
-        <header className="wb-header">
+        {/* Navigation is pinned to the bottom of the viewport rather than the
+            top of the page. A games grid is long, and a header that scrolls away
+            takes the search box and the account control with it — on a phone
+            there is no other way to search or sign in without scrolling back up.
+            It is a <nav> because it is the site's primary navigation. */}
+        <nav className="wb-bottombar" aria-label="Site">
           <h1 className="wb-brand">
-            <a href="#/" className="wb-brand-link"><WhiteBoxMark size={22} />WhiteBox</a>
+            <a href="#/" className="wb-brand-link"><WhiteBoxMark size={20} /><span>WhiteBox</span></a>
           </h1>
+
           <div className="wb-header-search">
             <span className="wb-search-icon" aria-hidden="true">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -473,7 +488,7 @@ export default function App() {
               ref={searchRef}
               type="search"
               className="wb-search"
-              placeholder="Search games  ( / )"
+              placeholder="Search games"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search games"
@@ -489,18 +504,21 @@ export default function App() {
               </button>
             )}
           </div>
+
           <div className="wb-topbar">
             <button
               type="button"
               className="wb-create-btn"
               onClick={() => navigate('create')}
+              aria-label="Create a game"
             >
-              Create
+              <PlusIcon />
+              <span className="wb-create-label">Create</span>
             </button>
             <SignIn mode={supabaseEnabled() ? 'supabase' : 'legacy'} />
             <ThemeToggle />
           </div>
-        </header>
+        </nav>
 
         {route.name === 'create' ? (
           <CreateGame
