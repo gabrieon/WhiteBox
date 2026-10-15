@@ -1507,3 +1507,4 @@
 .wb-dbg-hint { margin: 0 0 6px; opacity: 0.75; }
 .wb-dbg-hint-list { margin: 0; padding-left: 16px; opacity: 0.8; }
 .wb-dbg-hint-list li { margin-bottom: 4px; }
+.wb-dbg, .wb-dbg * { box-sizing: border-box; }

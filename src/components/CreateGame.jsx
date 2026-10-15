@@ -238,8 +238,11 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       let published = saved;
       if (pendingThumb) {
         try {
-          await uploadThumb(saved.id, pendingThumb.blob);
-          published = { ...saved, thumbKey: 'uploaded' };
+          const stored = await uploadThumb(saved.id, pendingThumb.blob);
+          // Carry the stored URL through, not just the key: the local object URL
+          // from the preview points at a blob that dies with this page, so using
+          // it would render a broken image the moment the form re-renders.
+          published = { ...saved, thumbKey: stored.key || 'uploaded', thumbUrl: stored.url };
         } catch (err) {
           setError(`Saved, but the photo failed: ${describeError(err)}`);
         }

@@ -52,6 +52,10 @@ export function thumbUrl(game) {
 /**
  * Upload a compressed thumbnail. The body is raw image bytes, so Content-Type is
  * whatever the blob actually is rather than application/json.
+ *
+ * Returns the stored object's public URL, so the caller can render the new photo
+ * immediately instead of waiting for a refetch that would otherwise leave a
+ * freshly-uploaded image blank on the card until the page reloaded.
  */
 export async function uploadThumb(gameId, blob) {
   const data = await apiFetch(`/v1/games/${encodeURIComponent(gameId)}/thumb`, {
@@ -59,7 +63,7 @@ export async function uploadThumb(gameId, blob) {
     headers: { 'Content-Type': blob.type || 'image/jpeg' },
     body: blob,
   });
-  return Boolean(data?.ok);
+  return { key: data?.key || null, url: data?.url || null };
 }
 
 export async function deleteThumb(gameId) {
