@@ -32,6 +32,9 @@ import {
 // before anything is forwarded to storage.
 import { readUpload } from './thumbs.js';
 import { putThumb, deleteThumb, thumbKey } from './thumbStore.js';
+import {
+  listBuiltinThumbs, setBuiltinThumb, clearBuiltinThumb, isAdmin,
+} from './builtinThumbs.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
@@ -435,6 +438,69 @@ async function handleRequest(request, env) {
         }
       }
       return json({ ok: true }, 200, authCorsHeaders);
+    }
+
+    // GET /v1/me -> { id, name, isAdmin } | 401
+    //
+    // The client needs to know whether the signed-in player is the owner, so it
+    // can hide owner-only controls instead of rendering them and having the
+    // Worker reject the attempt. Without this the built-in artwork panel would
+    // appear for everyone and fail for anyone who is not the admin.
+    if (url.pathname === '/v1/me' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      return json(
+        { id: user.id, name: user.name, isAdmin: isAdmin(env, user.id) },
+        200,
+        authCorsHeaders,
+      );
+    }
+
+    // GET /v1/builtin-thumbs -> { thumbs: { [gameId]: url } }
+    // Public read. The library needs these to draw a card, and a cover-art URL
+    // is not a secret.
+    if (url.pathname === '/v1/builtin-thumbs' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      return json({ thumbs: await listBuiltinThumbs(env) }, 200, authCorsHeaders);
+    }
+
+    // PUT /v1/builtin/:id/thumb — replace a built-in game's artwork.
+    const builtinThumbMatch = url.pathname.match(/^\/v1\/builtin\/([a-z0-9-]{1,64})\/thumb$/);
+    if (builtinThumbMatch && request.method === 'PUT') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      try {
+        const stored = await setBuiltinThumb(env, builtinThumbMatch[1], user, request);
+        return json({ ok: true, url: stored.url }, 200, authCorsHeaders);
+      } catch (err) {
+        const reason = err?.message || 'upload_failed';
+        const status = reason === 'not_allowed' ? 403 : 400;
+        return json({ error: reason }, status, authCorsHeaders);
+      }
+    }
+
+    // DELETE /v1/builtin/:id/thumb — restore the artwork that ships in the repo.
+    if (builtinThumbMatch && request.method === 'DELETE') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      try {
+        await clearBuiltinThumb(env, builtinThumbMatch[1], user);
+        return json({ ok: true }, 200, authCorsHeaders);
+      } catch (err) {
+        const reason = err?.message || 'clear_failed';
+        return json({ error: reason }, reason === 'not_allowed' ? 403 : 400, authCorsHeaders);
+      }
     }
 
     // ---- multiplayer -----------------------------------------------------

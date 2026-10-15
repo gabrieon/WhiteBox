@@ -8,6 +8,17 @@
    and inset-aware so it clears the notch on phones. The page reserves matching
    space above its content so nothing is ever trapped underneath. */
 
+/* The frost. Apple's translucent bars read as glass because of three things
+   working together, not the blur alone:
+     1. a large blur RADIUS relative to the bar's height — blur too small and it
+        looks like a smudge rather than depth
+     2. a saturation boost, because the blur mixes neighbouring colours toward
+        grey; lifting saturation puts that colour back
+     3. a low-alpha fill on top, so the frosted layer has something to sit on
+     4. a hairline edge plus a tight inner highlight, which is what sells a
+        physical edge catching light
+   The transition is deliberately slow — a material that moved instantly would
+   look like a UI element, not a pane of glass. */
 .wb-sitebar {
   position: fixed;
   left: 0;
@@ -22,20 +33,25 @@
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--sitebar-edge);
   background: var(--sitebar-fill);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: 0 8px 28px -20px var(--glass-shadow);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  box-shadow:
+    inset 0 -1px 0 var(--sitebar-highlight),
+    0 8px 32px -22px var(--glass-shadow);
+  transition: box-shadow 260ms ease, border-color 260ms ease;
 }
 
 :root,
 [data-theme='light'] {
-  --sitebar-fill: #ffffffe0;
-  --sitebar-edge: #e3e3e3;
+  --sitebar-fill: #ffffffe6;
+  --sitebar-edge: #00000014;
+  --sitebar-highlight: #ffffffcc;
 }
 
 [data-theme='dark'] {
-  --sitebar-fill: #0b0b0be0;
-  --sitebar-edge: #242424;
+  --sitebar-fill: #1c1c1ce0;
+  --sitebar-edge: #ffffff14;
+  --sitebar-highlight: #ffffff10;
 }
 
 .wb-sitebar .wb-brand {

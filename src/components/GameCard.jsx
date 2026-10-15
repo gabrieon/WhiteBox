@@ -22,12 +22,14 @@ export default function GameCard({ game, onOpen, playable, meta }) {
     if (playable) onOpen(game.id);
   }
 
-  // Built-in games have a checked-in photo under /thumbs. Player-created games
-  // use whatever was uploaded, or nothing at all — asking for /thumbs/<uuid>.jpg
-  // would fire a 404 per card and buy a broken image that only onError hides.
+  // Three possible sources, in order: a player-uploaded photo, an owner
+  // override for a built-in game, or the artwork checked into the repo.
+  // Built-ins never have a thumbKey — their replacement is an override keyed by
+  // id — so asking for /thumbs/<uuid>.jpg for a created game would just fire a
+  // 404 per card that only onError hides.
   const photo = game.thumbKey
     ? thumbUrl(game)
-    : (game.origin === 'user' ? null : `/thumbs/${game.id}.jpg`);
+    : (game.builtinThumb || (game.origin === 'user' ? null : `/thumbs/${game.id}.jpg`));
 
   return (
     <article className={`wb-card${playable ? ' is-playable' : ''}`}>

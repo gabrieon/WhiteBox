@@ -13,7 +13,7 @@ import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
-import { fetchCreatedGames } from './sdk/games/api.js';
+import { fetchCreatedGames, fetchBuiltinThumbs } from './sdk/games/api.js';
 
 // --- play history ------------------------------------------------------------
 // Historical play counts power the Top Played row:
@@ -251,11 +251,32 @@ export default function App() {
   // The registry holds built-ins; the database holds player creations. Merging
   // them here means every downstream filter, sort and search sees one list.
   // A created game can never shadow a built-in: registry ids win.
+  // Artwork overrides for built-in games, keyed by game id. Public read, so
+  // it loads for signed-out visitors too; a failure just means cards fall
+  // back to the artwork checked into the repository.
+  const [builtinThumbs, setBuiltinThumbs] = useState({});
+
+  useEffect(() => {
+    let alive = true;
+    fetchBuiltinThumbs()
+      .then((map) => { if (alive) setBuiltinThumbs(map); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   const library = useMemo(() => {
     const builtin = listGames();
     const taken = new Set(builtin.map((g) => g.id));
-    return [...builtin, ...createdGames.filter((g) => !taken.has(g.id))];
-  }, [createdGames]);
+
+    // An override replaces the shipped thumbnail without touching the repo.
+    const withOverrides = builtin.map((game) => (
+      builtinThumbs[game.id]
+        ? { ...game, builtinThumb: builtinThumbs[game.id] }
+        : game
+    ));
+
+    return [...withOverrides, ...createdGames.filter((g) => !taken.has(g.id))];
+  }, [createdGames, builtinThumbs]);
 
   // --- browse all ------------------------------------------------------------
   // The full catalog, not just the playable few. Category chips are ordered by

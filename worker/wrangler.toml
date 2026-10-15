@@ -64,6 +64,10 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelykno
 # Supabase Storage bucket holding player-uploaded thumbnails. Must match the
 # bucket created by worker/supabase-storage-setup.sql.
 THUMBS_BUCKET = "game-thumbs"
+# User ids allowed to change built-in game artwork (and, once moderation lands,
+# to approve or reject player games). Comma-separated Supabase user ids.
+# Current owner: manoj.kumar10121977@gmail.com
+ADMIN_USER_IDS = "bb64d52b-91fe-4d1e-b955-f035d631eb06"
 
 [observability]
 enabled = true

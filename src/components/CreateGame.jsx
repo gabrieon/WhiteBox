@@ -3,6 +3,7 @@ import { useAuth } from '../sdk/auth/authContext.js';
 import { fetchCreatedGames, createGame, updateGame, deleteGame, uploadThumb, deleteThumb, thumbUrl } from '../sdk/games/api.js';
 import { prepareThumbnail, revokePreview } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
+import BuiltinArtwork from './BuiltinArtwork.jsx';
 
 // The Create screen.
 //
@@ -586,6 +587,8 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
           </ul>
         )}
       </section>
+
+      <BuiltinArtwork />
     </div>
   );
 }

@@ -30,6 +30,45 @@ export async function deleteGame(id) {
   return Boolean(data?.ok);
 }
 
+/**
+ * Artwork overrides for built-in games.
+ *
+ * A built-in game ships a checked-in thumbnail in public/thumbs/, and this
+ * returns whatever the owner has replaced it with. Keys are built-in game ids;
+ * a missing key means "keep the shipped artwork".
+ */
+/**
+ * Who am I, and am I the owner?
+ *
+ * The client uses this to hide owner-only controls rather than rendering them
+ * for everyone and letting the Worker reject the attempt. Throws 401 when signed
+ * out, which callers treat as "not an admin".
+ */
+export async function fetchMe() {
+  return apiFetch('/v1/me');
+}
+
+export async function fetchBuiltinThumbs() {
+  const data = await apiFetch('/v1/builtin-thumbs');
+  return (data && typeof data.thumbs === 'object' && data.thumbs) || {};
+}
+
+export async function uploadBuiltinThumb(gameId, blob) {
+  const data = await apiFetch(`/v1/builtin/${encodeURIComponent(gameId)}/thumb`, {
+    method: 'PUT',
+    headers: { 'Content-Type': blob.type || 'image/jpeg' },
+    body: blob,
+  });
+  return { url: data?.url || null };
+}
+
+export async function deleteBuiltinThumb(gameId) {
+  const data = await apiFetch(`/v1/builtin/${encodeURIComponent(gameId)}/thumb`, {
+    method: 'DELETE',
+  });
+  return Boolean(data?.ok);
+}
+
 /** Edit an existing game. The thumbnail is left alone — that has its own routes. */
 export async function updateGame(id, draft) {
   const data = await apiFetch(`/v1/games/${encodeURIComponent(id)}`, {
