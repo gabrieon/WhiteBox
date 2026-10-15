@@ -1,44 +1,49 @@
-/* --- Pinned bottom navigation ----------------------------------------------
-   Sits at the bottom of the viewport on every screen size, glass-edged so it
-   separates from the content behind it without a hard border. The page reserves
-   space for it so the last row of game cards is never trapped underneath. */
+/* --- Pinned site navigation -----------------------------------------------
+   Fixed to the TOP of the viewport on every screen size. A games grid is long,
+   and a header that scrolls away takes the search box and the account control
+   with it — on a phone there is no other way to search or sign in without
+   scrolling all the way back up.
 
-.wb-bottombar {
+   Glass-edged so it separates from the content behind it without a hard rule,
+   and inset-aware so it clears the notch on phones. The page reserves matching
+   space above its content so nothing is ever trapped underneath. */
+
+.wb-sitebar {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  top: 0;
   z-index: 150;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 8px clamp(12px, 3vw, 22px);
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--bottombar-edge);
-  background: var(--bottombar-fill);
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  border-bottom: 1px solid var(--sitebar-edge);
+  background: var(--sitebar-fill);
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: 0 -8px 28px -18px var(--glass-shadow);
+  box-shadow: 0 8px 28px -20px var(--glass-shadow);
 }
 
 :root,
 [data-theme='light'] {
-  --bottombar-fill: #ffffffe0;
-  --bottombar-edge: #e3e3e3;
+  --sitebar-fill: #ffffffe0;
+  --sitebar-edge: #e3e3e3;
 }
 
 [data-theme='dark'] {
-  --bottombar-fill: #0b0b0be0;
-  --bottombar-edge: #242424;
+  --sitebar-fill: #0b0b0be0;
+  --sitebar-edge: #242424;
 }
 
-.wb-bottombar .wb-brand {
+.wb-sitebar .wb-brand {
   margin: 0;
   font-size: 13px;
 }
 
-.wb-bottombar .wb-brand-link {
+.wb-sitebar .wb-brand-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -48,20 +53,20 @@
   text-decoration: none;
 }
 
-.wb-bottombar .wb-header-search {
+.wb-sitebar .wb-header-search {
   /* Fill the space between brand and actions rather than keeping the old
      centred fixed width, which looked stranded on a wide bar. */
   width: 100%;
   justify-self: stretch;
 }
 
-.wb-bottombar .wb-topbar {
+.wb-sitebar .wb-topbar {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.wb-bottombar .wb-create-btn {
+.wb-sitebar .wb-create-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -77,18 +82,18 @@
   transition: background-color 140ms ease, color 140ms ease;
 }
 
-.wb-bottombar .wb-create-btn:hover {
+.wb-sitebar .wb-create-btn:hover {
   background: var(--ink);
   color: var(--paper);
 }
 
-/* The bar floats over the page, so the last rows need clearance beneath it. */
+/* The bar floats over the page, so the first rows need clearance beneath it. */
 .wb-shell {
-  padding-bottom: 76px;
+  padding-top: 72px;
 }
 
 @media (max-width: 560px) {
-  .wb-bottombar {
+  .wb-sitebar {
     gap: 8px;
     padding-left: 10px;
     padding-right: 10px;
@@ -98,7 +103,10 @@
   .wb-create-label {
     display: none;
   }
-  .wb-bottombar .wb-create-btn {
+  .wb-sitebar .wb-create-btn {
     padding: 0 11px;
+  }
+  .wb-shell {
+    padding-top: 64px;
   }
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
-import './bottombar.css';
+import './sitebar.css';
 import { findGame, isPlayable, listGames } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
@@ -467,12 +467,12 @@ export default function App() {
 
         {route.name !== 'play' && (
           <>
-        {/* Navigation is pinned to the bottom of the viewport rather than the
-            top of the page. A games grid is long, and a header that scrolls away
-            takes the search box and the account control with it — on a phone
-            there is no other way to search or sign in without scrolling back up.
-            It is a <nav> because it is the site's primary navigation. */}
-        <nav className="wb-bottombar" aria-label="Site">
+        {/* Navigation is pinned to the top of the viewport so it stays put however
+            far the library is scrolled. A games grid is long, and a header that
+            scrolls away takes the search box and the account control with it. It
+            is a <nav> because it is the site primary navigation, not a
+            document banner. */}
+        <nav className="wb-sitebar" aria-label="Site">
           <h1 className="wb-brand">
             <a href="#/" className="wb-brand-link"><WhiteBoxMark size={20} /><span>WhiteBox</span></a>
           </h1>
