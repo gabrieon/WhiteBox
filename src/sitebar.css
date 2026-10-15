@@ -127,8 +127,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
-  padding: 0 13px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--ink);
   border-radius: 999px;
   background: transparent;

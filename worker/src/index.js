@@ -26,7 +26,7 @@ import { readProgress, mergeProgress } from './progress.js';
 import { verifySupabaseToken, bearerToken } from './supabaseAuth.js';
 import {
   parseCreateGame, listGames, createGame, updateGame, deleteGame,
-  setThumb, getThumbKey, ownsGame,
+  setThumb, getThumbKey, canWriteGame, reviewGame,
 } from './games.js';
 // Thumbnail bytes come in raw (no multipart, no base64) and are validated here
 // before anything is forwarded to storage.
@@ -35,6 +35,9 @@ import { putThumb, deleteThumb, thumbKey } from './thumbStore.js';
 import {
   listBuiltinThumbs, setBuiltinThumb, clearBuiltinThumb, isAdmin,
 } from './builtinThumbs.js';
+import {
+  checkWriteRate, parseReviewDecision, rateLimitedResponse,
+} from './moderation.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
@@ -150,6 +153,16 @@ async function readJsonBody(request) {
   }
 }
 
+// Shared abuse ceiling for state-changing routes. Checked after identity where
+// the caller is authenticated (so the budget follows the account), or with a
+// null user where it must follow the IP instead. Returns a 429 response when
+// the budget is spent, or null when the request may proceed.
+async function throttleWrite(request, env, scope, userId, cors) {
+  const check = await checkWriteRate(env, request, scope, userId);
+  if (check.allowed) return null;
+  return rateLimitedResponse(json, cors, check.retryAfterSeconds);
+}
+
 // The request body lives in its own function so the exported worker can wrap it
 // in a single error boundary. Without that, any thrown error escapes as a bare
 // 500 with no log line and no body, which makes production faults undiagnosable.
@@ -191,6 +204,8 @@ async function handleRequest(request, env) {
       if (!authCorsHeaders) {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
+      const throttled = await throttleWrite(request, env, 'auth:login', null, authCorsHeaders);
+      if (throttled) return throttled;
       if (!env.GOOGLE_CLIENT_ID) {
         return json({ error: 'auth_not_configured' }, 503, authCorsHeaders);
       }
@@ -265,6 +280,8 @@ async function handleRequest(request, env) {
       }
       const userId = await resolveUserId(env, request);
       if (!userId) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'progress:save', userId, authCorsHeaders);
+      if (throttled) return throttled;
       const body = await readJsonBody(request);
       const incoming = body && typeof body === 'object' ? body.progress : undefined;
       if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
@@ -280,13 +297,45 @@ async function handleRequest(request, env) {
 
     // ---- created games ----------------------------------------------------
     // GET /v1/games -> { games: [...] }
-    // Public read: the library shows every published game to every visitor, so
-    // this deliberately does NOT require a session. Browsing is not privileged.
+    // Three views on one path, kept separate by `scope`:
+    // - default: the public catalogue, approved games only, no session needed;
+    // - `scope=mine`: the caller's own submissions in every state;
+    // - `scope=review`: one moderation state, admin only.
     if (url.pathname === '/v1/games' && request.method === 'GET') {
       if (!authCorsHeaders) {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
+      const scope = url.searchParams.get('scope');
       const limit = url.searchParams.get('limit');
+
+      if (scope === 'mine') {
+        const user = await resolveUser(env, request);
+        if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+        const games = await listGames(env, {
+          limit: limit ? Number(limit) : 60,
+          creatorId: user.id,
+        });
+        return json({ games }, 200, authCorsHeaders);
+      }
+
+      if (scope === 'review') {
+        const user = await resolveUser(env, request);
+        if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+        if (!isAdmin(env, user.id)) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+        const status = url.searchParams.get('status') || 'pending';
+        try {
+          const games = await listGames(env, {
+            limit: limit ? Number(limit) : 60,
+            status,
+          });
+          return json({ games }, 200, authCorsHeaders);
+        } catch (err) {
+          return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+        }
+      }
+
+      if (scope) return json({ error: 'scope_invalid' }, 400, authCorsHeaders);
+
       const games = await listGames(env, { limit: limit ? Number(limit) : 60 });
       return json({ games }, 200, authCorsHeaders);
     }
@@ -294,12 +343,16 @@ async function handleRequest(request, env) {
     // POST /v1/games { title, description, categories, type, mode }
     // Creates a catalogue entry owned by the caller. The creator is taken from
     // the verified token, so a forged body cannot misattribute authorship.
+    // New games are pending: the response is a submission receipt, not a
+    // publication.
     if (url.pathname === '/v1/games' && request.method === 'POST') {
       if (!authCorsHeaders) {
         return json({ error: 'origin_not_allowed' }, 403, cors);
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:create', user.id, authCorsHeaders);
+      if (throttled) return throttled;
 
       const body = await readJsonBody(request);
       let draft;
@@ -317,7 +370,7 @@ async function handleRequest(request, env) {
       }
     }
 
-    // PUT /v1/games/:id — edit one of your own games.
+    // PUT /v1/games/:id — edit an entry the caller owns, or any entry for an admin.
     // The thumbnail is not touched here: replacing or clearing it has its own
     // routes, so a plain metadata edit can't silently discard a photo.
     const updateMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})$/);
@@ -327,6 +380,8 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:update', user.id, authCorsHeaders);
+      if (throttled) return throttled;
 
       const body = await readJsonBody(request);
       let draft;
@@ -337,7 +392,8 @@ async function handleRequest(request, env) {
       }
 
       try {
-        const updated = await updateGame(env, updateMatch[1], draft, user.id);
+        const admin = isAdmin(env, user.id);
+        const updated = await updateGame(env, updateMatch[1], draft, user.id, { admin });
         if (!updated) return json({ error: 'not_found' }, 404, authCorsHeaders);
         return json({ game: updated }, 200, authCorsHeaders);
       } catch (err) {
@@ -345,9 +401,10 @@ async function handleRequest(request, env) {
       }
     }
 
-    // DELETE /v1/games/:id
-    // Ownership is enforced in the query itself, so a player can only ever
-    // remove their own game whatever id they send.
+    // DELETE /v1/games/:id — admin only.
+    // A creator can submit and revise, but cannot remove a row from the public
+    // record themselves. Once approved, the game belongs to the library; taking
+    // it down is a moderation action, not an authoring action.
     const deleteMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})$/);
     if (deleteMatch && request.method === 'DELETE') {
       if (!authCorsHeaders) {
@@ -355,7 +412,12 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
-      const outcome = await deleteGame(env, deleteMatch[1], user.id);
+      const admin = isAdmin(env, user.id);
+      if (!admin) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:delete', user.id, authCorsHeaders);
+      if (throttled) return throttled;
+      const outcome = await deleteGame(env, deleteMatch[1], { admin });
+      if (outcome.rejected) return json({ error: outcome.rejected }, 403, authCorsHeaders);
       if (!outcome.removed) return json({ error: 'not_found' }, 404, authCorsHeaders);
       // Drop the image too, or deleting a game leaks an object in storage
       // forever with nothing pointing at it.
@@ -369,6 +431,38 @@ async function handleRequest(request, env) {
       return json({ ok: true }, 200, authCorsHeaders);
     }
 
+    // POST /v1/games/:id/review { decision: "approved" | "rejected" }
+    // The only path from pending to public. A human admin makes the call; no
+    // automatic scoring, keyword scan, or model judgement is consulted here or
+    // anywhere else.
+    const reviewMatch = url.pathname.match(/^\/v1\/games\/([A-Za-z0-9-]{1,64})\/review$/);
+    if (reviewMatch && request.method === 'POST') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      if (!isAdmin(env, user.id)) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:review', user.id, authCorsHeaders);
+      if (throttled) return throttled;
+
+      const body = await readJsonBody(request);
+      let decision;
+      try {
+        decision = parseReviewDecision(body?.decision);
+      } catch (err) {
+        return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+      }
+
+      try {
+        const game = await reviewGame(env, reviewMatch[1], decision);
+        if (!game) return json({ error: 'not_found' }, 404, authCorsHeaders);
+        return json({ game }, 200, authCorsHeaders);
+      } catch (err) {
+        return json({ error: err?.message || 'review_failed' }, 400, authCorsHeaders);
+      }
+    }
+
     // PUT /v1/games/:id/thumb  (raw image bytes as the body)
     // The browser compresses to JPEG before sending, so this receives a small
     // file rather than a raw camera photo. Content-Length is checked before the
@@ -380,13 +474,16 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:thumb', user.id, authCorsHeaders);
+      if (throttled) return throttled;
 
       const id = thumbMatch[1];
-      // Prove ownership before spending bandwidth on the image, not after.
+      // Prove write access before spending bandwidth on the image, not after.
       // This must be a read: probing with a real UPDATE would clear thumb_key
       // first, so a rejected or oversized upload would leave the game pointing
       // at an orphaned object with no thumbnail reference at all.
-      if (!(await ownsGame(env, id, user.id))) {
+      const admin = isAdmin(env, user.id);
+      if (!(await canWriteGame(env, id, user.id, { admin }))) {
         return json({ error: 'not_found' }, 404, authCorsHeaders);
       }
 
@@ -408,7 +505,7 @@ async function handleRequest(request, env) {
         // ever learns.
         return json({ error: err?.message || 'storage_not_configured' }, 503, authCorsHeaders);
       }
-      await setThumb(env, id, key, user.id);
+      await setThumb(env, id, key, user.id, { admin });
 
       return json({ ok: true, key, url: stored.url, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);
     }
@@ -420,12 +517,15 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:thumb', user.id, authCorsHeaders);
+      if (throttled) return throttled;
 
       const id = thumbMatch[1];
       // Read the current key first: after clearing thumb_key there is no way to
       // know which object to remove from storage.
       const previousKey = await getThumbKey(env, id);
-      const owned = await setThumb(env, id, null, user.id);
+      const admin = isAdmin(env, user.id);
+      const owned = await setThumb(env, id, null, user.id, { admin });
       if (!owned) return json({ error: 'not_found' }, 404, authCorsHeaders);
 
       if (previousKey) {
@@ -477,6 +577,8 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'builtin:thumb', user.id, authCorsHeaders);
+      if (throttled) return throttled;
       try {
         const stored = await setBuiltinThumb(env, builtinThumbMatch[1], user, request);
         return json({ ok: true, url: stored.url }, 200, authCorsHeaders);
@@ -494,6 +596,8 @@ async function handleRequest(request, env) {
       }
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'builtin:thumb', user.id, authCorsHeaders);
+      if (throttled) return throttled;
       try {
         await clearBuiltinThumb(env, builtinThumbMatch[1], user);
         return json({ ok: true }, 200, authCorsHeaders);

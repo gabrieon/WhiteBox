@@ -66,12 +66,12 @@
 .wb-search-clear {
   position: absolute;
   top: 50%;
-  right: 7px;
+  right: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   transform: translateY(-50%);
   border: 0;
@@ -103,8 +103,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 0;
   border-radius: 999px;
@@ -152,6 +152,9 @@
 }
 
 .wb-signin-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -495,6 +498,24 @@
   margin-bottom: 26px;
 }
 
+.wb-sync {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.wb-sync-retry {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .wb-sort {
   display: inline-flex;
   align-items: center;
@@ -711,7 +732,8 @@
 
 .wb-card-play-btn {
   flex: 0 0 auto;
-  padding: 7px 15px;
+  min-height: 44px;
+  padding: 0 16px;
   /* Transparent border on the default state keeps the capsule the exact same
      size when it turns grey for a game that isn't playable yet. */
   border: 1px solid transparent;
@@ -1074,7 +1096,8 @@
 
 .wb-mine-delete {
   flex: none;
-  padding: 6px 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
@@ -1182,6 +1205,9 @@
 }
 
 .wb-upload-clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -1199,7 +1225,8 @@
 
 .wb-mine-action {
   flex: none;
-  padding: 6px 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid transparent;
   border-radius: 999px;
   background: transparent;
@@ -1213,6 +1240,49 @@
 .wb-mine-action:hover {
   opacity: 1;
   border-color: var(--line);
+}
+
+.wb-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.wb-mine-status {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wb-mine-status.is-pending {
+  border-color: #c9962c;
+  color: #c9962c;
+}
+
+.wb-mine-status.is-approved {
+  border-color: #3f9142;
+  color: #3f9142;
+}
+
+.wb-mine-status.is-rejected {
+  border-color: #c02626;
+  color: #c02626;
+}
+
+.wb-mine-meta {
+  opacity: 0.45 !important;
+}
+
+.wb-mine-notice {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* --- Play shell -----------------------------------------------------------
@@ -1294,7 +1364,8 @@
 .wb-play-cta:active { transform: scale(0.97); }
 
 .wb-play-quiet {
-  padding: 6px 0;
+  min-height: 44px;
+  padding: 0 12px;
   border: 0;
   background: none;
   color: #7a7a7a;
@@ -1445,6 +1516,9 @@
 }
 
 .wb-form-cancel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -1651,6 +1725,9 @@
 }
 
 .wb-footer-mail {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -1682,6 +1759,9 @@
 
 .wb-footer-col a,
 .wb-footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: inherit;
   font-size: 12px;
   font-weight: 500;

@@ -25,3 +25,16 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Installability and offline shell only. Production-only on purpose: a worker
+// registered from `vite dev` would serve stale bundles across code changes,
+// which is exactly the class of caching bug the site Worker was written to
+// avoid.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Offline support is an enhancement. A failed registration must never
+      // surface as an error in the game library.
+    });
+  });
+}

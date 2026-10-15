@@ -23,8 +23,13 @@ const dictionary = (await fetchWords(DICT_URL)).filter(fiveLetters);
 const dictionarySet = new Set(dictionary);
 
 // Answers: common enough that a player could plausibly have guessed them, and
-// free of proper nouns. This is the curated, careful list.
-const answers = [...new Set(freq)].filter((w) => dictionarySet.has(w)).sort();
+// free of proper nouns. This is the curated, careful list. The intersection
+// alone cannot tell a common noun from a common name, so names the data proves
+// are undefinable as ordinary words are excluded explicitly.
+const ANSWER_BLOCKLIST = new Set(['jesse', 'kerry']);
+const answers = [...new Set(freq)].filter(
+  (w) => dictionarySet.has(w) && !ANSWER_BLOCKLIST.has(w),
+).sort();
 
 // Guesses: every five-letter word a Scrabble player would recognise. Deliberately
 // far larger than the answer pool, because rejecting an obvious guess ("crane")

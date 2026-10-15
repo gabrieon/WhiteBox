@@ -14,6 +14,7 @@
 
 import { normalizeManifest, validateManifest } from '../sdk/manifest.js';
 import wordLock from './word-lock/manifest.js';
+import pairVault from './memory-match/manifest.js';
 
 const registry = new Map();
 
@@ -44,11 +45,12 @@ export function registerGame(manifest) {
   return normalized;
 }
 
-// Code-split: WORDLOCK ships its own word list and component, so neither is
-// pulled into the library bundle for visitors who never open it.
+// Code-split: each game ships its own component and data, so neither is pulled
+// into the library bundle for visitors who never open it.
 wordLock.loader = () => import('./word-lock/WordLock.jsx');
+pairVault.loader = () => import('./memory-match/PairVault.jsx');
 
-const builtIns = [wordLock];
+const builtIns = [wordLock, pairVault];
 
 builtIns.forEach(registerGame);
 

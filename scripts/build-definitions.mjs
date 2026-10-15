@@ -19,6 +19,18 @@ const ANSWERS = fs.readFileSync('src/games/word-lock/words.js', 'utf8');
 // JSON.parse rejects but JS accepts. Add the missing import instead.
 const WORDS = (await import('../src/games/word-lock/words.js')).ANSWERS;
 
+// Resume rather than restart. The first full pass already baked most answers,
+// so a second complete serial walk would needlessly hit the API another thousand
+// times. Fetch only words that still lack a definition, then merge them with
+// what is already on disk.
+let existing = {};
+try {
+  existing = (await import('../src/games/word-lock/definitions.js')).DEFINITIONS || {};
+} catch {
+  existing = {};
+}
+const TARGETS = WORDS.filter((word) => !existing[word]);
+
 const ENDPOINT = (w) => `https://en.wiktionary.org/api/rest_v1/page/definition/${w}`;
 
 // Wiktionary's REST API rate-limits aggressively and answers 429 rather than
@@ -46,13 +58,24 @@ function toPlain(html) {
 
 // A definition is only useful in a 5-second flash if it is short and concrete.
 // Long or qualified definitions get skipped in favour of the next sense.
+function cleanDefinitionText(html) {
+  const text = toPlain(html);
+  // The API sometimes leaks stylesheet text after the prose (notably fragments
+  // beginning `.mw-parser-output`). Tags are already gone, so remove the
+  // selector-shaped remainder; it was never part of the definition.
+  return text
+    .replace(/\s*\.mw-parser-output[^{}]*(\{[^{}]*\})?/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function pick(defs) {
   for (const d of defs) {
-    const text = toPlain(d.definition || '');
+    const text = cleanDefinitionText(d.definition || '');
     if (text.length >= 12 && text.length <= 140) return text;
   }
   for (const d of defs) {
-    const text = toPlain(d.definition || '');
+    const text = cleanDefinitionText(d.definition || '');
     if (text.length >= 8) return text.slice(0, 140);
   }
   return null;
@@ -87,21 +110,29 @@ async function fetchOne(word) {
   return null;
 }
 
-const out = {};
-let done = 0;
+const out = { ...existing };
+let done = Object.keys(existing).length;
 let missing = 0;
 
 // Strictly serial. Concurrency is what got us rate-limited in the first place.
-for (const word of WORDS) {
+for (const word of TARGETS) {
   const def = await fetchOne(word);
   if (def) out[word] = def;
   else missing += 1;
 
   done += 1;
-  if (done % 100 === 0 || done === WORDS.length) {
-    process.stdout.write(`  ${done}/${WORDS.length} fetched, ${Object.keys(out).length} usable, ${missing} missing\n`);
+  if (done % 25 === 0 || done === WORDS.length) {
+    process.stdout.write(`  ${done}/${WORDS.length} fetched, ${Object.keys(out).length} usable, ${missing} missing this pass\n`);
   }
   await sleep(DELAY_MS);
+}
+
+// Old passes kept stylesheet fragments. Clean the previously saved entries too,
+// so one resumed run leaves the whole baked file in the same readable shape.
+for (const [word, definition] of Object.entries(out)) {
+  const cleaned = cleanDefinitionText(definition);
+  if (cleaned) out[word] = cleaned;
+  else delete out[word];
 }
 
 const header = `// Short definitions for WORDLOCK answer words.

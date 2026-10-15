@@ -5,6 +5,9 @@ import {
   scoreGuess, keyboardState, isSolved, pickAnswer,
   CORRECT, PRESENT, MAX_GUESSES, WORD_LENGTH,
 } from './scoring.js';
+import {
+  readStats, recordResult, shareText,
+} from './share.js';
 import './WordLock.css';
 
 // WORDLOCK — guess the five-letter word in six tries.
@@ -43,14 +46,17 @@ function formatElapsed(ms) {
 
 export default function WordLock({ onExit }) {
   // Answer is fixed for the lifetime of a round and never re-rolled, so a
-  // re-render can't swap it out from under the player mid-guess.
-  const [answer] = useState(() => pickAnswer(ANSWERS));
+  // re-render can't swap it out from under the player mid-guess. Restarting
+  // replaces the whole round through resetRound rather than reloading the page.
+  const [answer, setAnswer] = useState(() => pickAnswer(ANSWERS));
 
   const [guesses, setGuesses] = useState([]);
   const [current, setCurrent] = useState('');
   const [status, setStatus] = useState('playing'); // playing | won | lost
   const [shakeKey, setShakeKey] = useState(0);
   const [message, setMessage] = useState('');
+  const [stats, setStats] = useState(() => readStats());
+  const [shareState, setShareState] = useState('idle'); // idle | shared | copied | failed
 
   // --- clue ---------------------------------------------------------------
   // The definition flashes at the top for five seconds, then fades. The answer
@@ -115,6 +121,22 @@ export default function WordLock({ onExit }) {
     setCurrent(next);
   }
 
+  // A finished round updates the local streak exactly once, at the moment it
+  // ends. Recording from the render path would double-count on StrictMode or
+  // re-renders; recording here ties one outcome to one stats write.
+  const finishRound = useCallback((won, finalGuesses) => {
+    const finalElapsed = startedRef.current === null
+      ? 0
+      : Date.now() - startedRef.current;
+    setStatus(won ? 'won' : 'lost');
+    stopClock();
+    setStats(recordResult({
+      won,
+      guesses: finalGuesses.length,
+      elapsedMs: finalElapsed,
+    }));
+  }, [stopClock]);
+
   const locked = status !== 'playing';
   const keys = useMemo(() => keyboardState(guesses), [guesses]);
 
@@ -137,18 +159,17 @@ export default function WordLock({ onExit }) {
     }
 
     const verdicts = scoreGuess(word, answer);
-    setGuesses((prev) => [...prev, { word, verdicts }]);
+    const nextGuesses = [...guesses, { word, verdicts }];
+    setGuesses(nextGuesses);
     setCurrentWord('');
     setMessage('');
 
     if (isSolved(verdicts)) {
-      setStatus('won');
-      stopClock();
-    } else if (guesses.length + 1 >= MAX_GUESSES) {
-      setStatus('lost');
-      stopClock();
+      finishRound(true, nextGuesses);
+    } else if (nextGuesses.length >= MAX_GUESSES) {
+      finishRound(false, nextGuesses);
     }
-  }, [answer, guesses.length, locked, stopClock]);
+  }, [answer, guesses, locked, finishRound]);
 
   const backspace = useCallback(() => {
     if (locked) return;
@@ -174,6 +195,65 @@ export default function WordLock({ onExit }) {
     // dependency list stable and doesn't have to be rebuilt when it does.
     startClock();
   }, [submit, backspace, locked, startClock]);
+
+  // A new round stays inside the SPA. Reloading the page would throw away the
+  // loaded bundle and scroll position, which is exactly what the same-origin
+  // play flow was built to avoid.
+  function resetRound() {
+    setAnswer(pickAnswer(ANSWERS));
+    setGuesses([]);
+    setCurrentWord('');
+    setStatus('playing');
+    setShakeKey(0);
+    setMessage('');
+    setClueState('show');
+    setShareState('idle');
+    startedRef.current = null;
+    setStartedAt(null);
+    setFinishedAt(null);
+    setElapsed(0);
+  }
+
+  // Viral loop, without leaking the answer. The grid carries the score shape
+  // but no letters, so a shared screenshot cannot spoil anyone. Native share
+  // when the browser offers it, clipboard otherwise.
+  async function shareResult() {
+    const url = `${window.location.origin}/#/play/word-lock`;
+    const text = shareText({
+      won: status === 'won',
+      guesses,
+      elapsedLabel: formatElapsed(elapsed),
+      streak: stats.currentStreak,
+      url,
+    });
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'WORDLOCK', text, url });
+        setShareState('shared');
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setShareState('copied');
+        return;
+      }
+
+      const fallback = document.createElement('textarea');
+      fallback.value = text;
+      fallback.setAttribute('readonly', '');
+      fallback.style.position = 'fixed';
+      fallback.style.opacity = '0';
+      document.body.appendChild(fallback);
+      fallback.select();
+      document.execCommand('copy');
+      document.body.removeChild(fallback);
+      setShareState('copied');
+    } catch (err) {
+      // Cancelling the native sheet is not a failure — only report real errors.
+      setShareState(err?.name === 'AbortError' ? 'idle' : 'failed');
+    }
+  }
 
   // Physical keyboard. Bound on the document rather than the grid so the game
   // works without the player ever clicking it first.
@@ -299,13 +379,29 @@ export default function WordLock({ onExit }) {
             <p className="wl-outcome-answer">
               Time taken <strong>{formatElapsed(elapsed)}</strong>
             </p>
+            <p className="wl-outcome-answer">
+              Streak <strong>{stats.currentStreak}</strong>
+              {stats.bestStreak > 0 && ` · best ${stats.bestStreak}`}
+              {stats.bestGuesses !== null && ` · best ${stats.bestGuesses} ${stats.bestGuesses === 1 ? 'try' : 'tries'}`}
+            </p>
             <div className="wl-outcome-actions">
               <button
                 type="button"
                 className="wl-btn"
-                onClick={() => window.location.reload()}
+                onClick={resetRound}
               >
                 Play again
+              </button>
+              <button
+                type="button"
+                className="wl-btn is-ghost"
+                onClick={shareResult}
+              >
+                {shareState === 'shared'
+                  ? 'Shared'
+                  : shareState === 'copied'
+                    ? 'Copied'
+                    : 'Share result'}
               </button>
               {onExit && (
                 <button type="button" className="wl-btn is-ghost" onClick={onExit}>
@@ -313,6 +409,11 @@ export default function WordLock({ onExit }) {
                 </button>
               )}
             </div>
+            {shareState === 'failed' && (
+              <p className="wl-share-error" role="status">
+                Sharing is not available in this browser. Screenshot the board instead.
+              </p>
+            )}
           </div>
         )}
       </div>

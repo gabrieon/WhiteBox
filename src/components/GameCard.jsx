@@ -23,13 +23,14 @@ export default function GameCard({ game, onOpen, playable, meta }) {
   }
 
   // Three possible sources, in order: a player-uploaded photo, an owner
-  // override for a built-in game, or the artwork checked into the repo.
-  // Built-ins never have a thumbKey — their replacement is an override keyed by
-  // id — so asking for /thumbs/<uuid>.jpg for a created game would just fire a
-  // 404 per card that only onError hides.
+  // override for a built-in game, or a thumbnail explicitly declared on the
+  // manifest. Built-ins never have a thumbKey — their replacement is an
+  // override keyed by id. There is deliberately no `/thumbs/<id>.jpg` guess:
+  // requesting a conventional path for artwork that was never checked in
+  // would fire a 404 per card.
   const photo = game.thumbKey
     ? thumbUrl(game)
-    : (game.builtinThumb || (game.origin === 'user' ? null : `/thumbs/${game.id}.jpg`));
+    : (game.builtinThumb || game.thumbnail || null);
 
   return (
     <article className={`wb-card${playable ? ' is-playable' : ''}`}>

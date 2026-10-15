@@ -12,6 +12,33 @@ export async function fetchCreatedGames({ limit = 60 } = {}) {
 }
 
 /**
+ * The signed-in player's own submissions in every moderation state. The
+ * public catalogue intentionally hides pending and rejected entries, so this
+ * separate view is the only way a creator can see what is awaiting review.
+ */
+export async function fetchMyGames({ limit = 60 } = {}) {
+  const data = await apiFetch(`/v1/games?scope=mine&limit=${encodeURIComponent(limit)}`);
+  return Array.isArray(data?.games) ? data.games : [];
+}
+
+/** One moderation state for the admin queue. Defaults to what needs a human. */
+export async function fetchReviewGames({ status = 'pending', limit = 60 } = {}) {
+  const data = await apiFetch(
+    `/v1/games?scope=review&status=${encodeURIComponent(status)}&limit=${encodeURIComponent(limit)}`,
+  );
+  return Array.isArray(data?.games) ? data.games : [];
+}
+
+/** Human moderation decision. Returns the game in its new state. */
+export async function reviewGame(id, decision) {
+  const data = await apiFetch(`/v1/games/${encodeURIComponent(id)}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ decision }),
+  });
+  return data.game;
+}
+
+/**
  * Publish a game. Throws on failure with a short reason the Create screen turns
  * into a field-level message.
  */

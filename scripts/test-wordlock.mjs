@@ -217,7 +217,7 @@ check('no proper nouns leaked into the answer pool', () => {
   // People, places and brands. Note ADOBE is deliberately absent from this list:
   // it is an ordinary English noun (the brick material) as well as a company,
   // so it is a fair answer.
-  for (const w of ['aaron', 'india', 'nokia', 'xanax', 'delhi', 'susan']) {
+  for (const w of ['aaron', 'india', 'nokia', 'xanax', 'delhi', 'susan', 'jesse', 'kerry']) {
     assert.ok(!ANSWERS.includes(w), `${w} should not be an answer`);
   }
 });

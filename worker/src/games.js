@@ -39,6 +39,7 @@ function stripControlChars(value) {
 class ValidationError extends Error {}
 
 import { publicUrl } from './thumbStore.js';
+import { DEFAULT_REVIEW_STATUS, GAME_STATUSES, isGameStatus } from './moderation.js';
 
 function cleanText(value, { max, field, required }) {
   if (value === undefined || value === null) {
@@ -128,6 +129,10 @@ function rowToGame(row, env) {
     creatorId: row.creator_id,
     creatorName: row.creator_name || null,
     createdAt: row.created_at,
+    // Moderation state. Rows written before the moderation migration carry no
+    // value when read through an unmigrated fixture; treat the absence as
+    // pending rather than inventing public visibility.
+    status: isGameStatus(row.status) ? row.status : DEFAULT_REVIEW_STATUS,
     // Set when the player uploaded a photo instead of taking the generated SVG
     // artwork. Null means "use GameArt", which is the default.
     thumbKey: thumbKeyValue,
@@ -140,19 +145,40 @@ function rowToGame(row, env) {
   };
 }
 
-/** Newest first. `limit` is capped server-side regardless of what is asked for. */
-export async function listGames(env, { limit = 60, creatorId = null } = {}) {
+/**
+ * List games by audience. Three mutually exclusive views:
+ * - a creator's own catalogue (`creatorId`), including pending and rejected;
+ * - one moderation state (`status`), used only by the admin queue;
+ * - the public catalogue when neither is supplied, which is approved only.
+ *
+ * The route enforces which caller may use which view. This function assumes its
+ * inputs are already authorized and only validates the shape of `status`.
+ */
+export async function listGames(env, { limit = 60, creatorId = null, status = null } = {}) {
   if (!env.GAMES) return [];
 
   const size = Math.max(1, Math.min(MAX_PAGE_SIZE, Number(limit) || 60));
 
-  const result = creatorId
-    ? await env.GAMES.prepare(
+  if (creatorId) {
+    const result = await env.GAMES.prepare(
       'SELECT * FROM games WHERE creator_id = ? ORDER BY created_at DESC LIMIT ?',
-    ).bind(creatorId, size).all()
-    : await env.GAMES.prepare(
-      'SELECT * FROM games ORDER BY created_at DESC LIMIT ?',
-    ).bind(size).all();
+    ).bind(creatorId, size).all();
+    return (result.results || []).map((row) => rowToGame(row, env));
+  }
+
+  if (status) {
+    if (!isGameStatus(status)) throw new ValidationError('status_invalid');
+    const result = await env.GAMES.prepare(
+      'SELECT * FROM games WHERE status = ? ORDER BY created_at DESC LIMIT ?',
+    ).bind(status, size).all();
+    return (result.results || []).map((row) => rowToGame(row, env));
+  }
+
+  // Public read is deliberately approved-only. A row that has not passed human
+  // review must never reach this query, whatever the client asks for.
+  const result = await env.GAMES.prepare(
+    'SELECT * FROM games WHERE status = ? ORDER BY created_at DESC LIMIT ?',
+  ).bind('approved', size).all();
 
   return (result.results || []).map((row) => rowToGame(row, env));
 }
@@ -160,6 +186,8 @@ export async function listGames(env, { limit = 60, creatorId = null } = {}) {
 /**
  * Insert a game on behalf of an already-authenticated creator.
  * `creatorId`/`creatorName` come from the verified token, never the body.
+ * Every new entry starts pending: it is visible to its creator and the review
+ * queue, but never to the public catalogue.
  */
 export async function createGame(env, draft, creatorId, creatorName) {
   if (!env.GAMES) throw new ValidationError('storage_not_configured');
@@ -178,8 +206,8 @@ export async function createGame(env, draft, creatorId, creatorName) {
   const createdAt = Date.now();
 
   await env.GAMES.prepare(
-    `INSERT INTO games (id, title, description, categories, type, mode, creator_id, creator_name, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO games (id, title, description, categories, type, mode, creator_id, creator_name, created_at, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     id,
     draft.title,
@@ -190,6 +218,7 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creatorId,
     creatorName || null,
     createdAt,
+    DEFAULT_REVIEW_STATUS,
   ).run();
 
   return rowToGame({
@@ -202,36 +231,49 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creator_id: creatorId,
     creator_name: creatorName || null,
     created_at: createdAt,
+    status: DEFAULT_REVIEW_STATUS,
     thumb_key: null,
   }, env);
 }
 
 /**
- * Update a game the caller owns. Returns the updated row, or null when the game
- * doesn't exist or belongs to someone else — the two are deliberately
- * indistinguishable so this endpoint can't be used to probe for ids.
+ * Update a game. Owners may edit their own entries; an admin may edit any
+ * entry. Returns the updated row, or null when the game does not exist or the
+ * caller may not touch it — the two are deliberately indistinguishable so this
+ * endpoint cannot be used to probe for ids.
+ *
+ * An owner's edit to an already-approved game sends it back to pending. That
+ * is the whole point of moderation: approval covers the exact catalogue entry
+ * a human saw, not whatever it becomes afterwards. Admin edits leave the
+ * status alone because the admin is the reviewer.
  */
-export async function updateGame(env, id, draft, creatorId) {
+export async function updateGame(env, id, draft, creatorId, { admin = false } = {}) {
   if (!env.GAMES) throw new ValidationError('storage_not_configured');
 
-  const result = await env.GAMES.prepare(
+  const row = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
+  if (!row) return null;
+  if (!admin && row.creator_id !== creatorId) return null;
+
+  const nextStatus = admin
+    ? row.status
+    : (row.status === 'approved' ? DEFAULT_REVIEW_STATUS : row.status);
+
+  await env.GAMES.prepare(
     `UPDATE games
-        SET title = ?, description = ?, categories = ?, type = ?, mode = ?
-      WHERE id = ? AND creator_id = ?`,
+        SET title = ?, description = ?, categories = ?, type = ?, mode = ?, status = ?
+      WHERE id = ?`,
   ).bind(
     draft.title,
     draft.description,
     JSON.stringify(draft.categories),
     draft.type,
     draft.mode,
+    nextStatus,
     id,
-    creatorId,
   ).run();
 
-  if ((result.meta?.changes ?? 0) === 0) return null;
-
-  const row = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
-  return rowToGame(row, env);
+  const updated = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
+  return rowToGame(updated, env);
 }
 
 /** True when this creator owns the game. Read-only: never mutates as a side effect. */
@@ -244,18 +286,40 @@ export async function ownsGame(env, id, creatorId) {
 }
 
 /**
- * Attach an uploaded thumbnail to a game the caller owns.
+ * True when the caller may change a game's metadata or thumbnail: its owner,
+ * or an admin acting on any game. Existence and permission stay merged, so a
+ * denied thumbnail upload cannot be used to probe for ids.
+ */
+export async function canWriteGame(env, id, creatorId, { admin = false } = {}) {
+  if (!env.GAMES) return false;
+  if (admin) {
+    const row = await env.GAMES.prepare(
+      'SELECT 1 AS ok FROM games WHERE id = ?',
+    ).bind(id).first();
+    return Boolean(row);
+  }
+  return ownsGame(env, id, creatorId);
+}
+
+/**
+ * Attach an uploaded thumbnail to a game the caller may change.
  *
- * Ownership is enforced in the UPDATE itself, so this returns false both when the
+ * Permission is enforced before the write, so this returns false both when the
  * game doesn't exist and when it belongs to someone else — the two cases are
  * deliberately indistinguishable to the caller.
  */
-export async function setThumb(env, gameId, key, creatorId) {
+export async function setThumb(env, gameId, key, creatorId, { admin = false } = {}) {
   if (!env.GAMES) throw new ValidationError('storage_not_configured');
-  const result = await env.GAMES.prepare(
-    'UPDATE games SET thumb_key = ? WHERE id = ? AND creator_id = ?',
-  ).bind(key, gameId, creatorId).run();
-  return (result.meta?.changes ?? 0) > 0;
+  const row = await env.GAMES.prepare(
+    'SELECT creator_id FROM games WHERE id = ?',
+  ).bind(gameId).first();
+  if (!row) return false;
+  if (!admin && row.creator_id !== creatorId) return false;
+
+  await env.GAMES.prepare(
+    'UPDATE games SET thumb_key = ? WHERE id = ?',
+  ).bind(key, gameId).run();
+  return true;
 }
 
 export async function getThumbKey(env, gameId) {
@@ -266,23 +330,45 @@ export async function getThumbKey(env, gameId) {
   return row?.thumb_key || null;
 }
 
-export async function deleteGame(env, id, creatorId) {
+/**
+ * Apply a human moderation decision. Only ever called after the route has
+ * verified the caller is an admin; the function itself validates that the
+ * decision is one of the two terminal states.
+ */
+export async function reviewGame(env, id, decision) {
+  if (!env.GAMES) throw new ValidationError('storage_not_configured');
+  if (decision !== 'approved' && decision !== 'rejected') {
+    throw new ValidationError('decision_invalid');
+  }
+
+  const result = await env.GAMES.prepare(
+    'UPDATE games SET status = ? WHERE id = ?',
+  ).bind(decision, id).run();
+  if ((result.meta?.changes ?? 0) === 0) return null;
+
+  const row = await env.GAMES.prepare('SELECT * FROM games WHERE id = ?').bind(id).first();
+  return rowToGame(row, env);
+}
+
+export async function deleteGame(env, id, { admin = false } = {}) {
   if (!env.GAMES) return { removed: false, thumbKey: null };
+
+  // Deletion is admin-only. Creators can submit, edit, and withdraw attention
+  // from their own entries by asking for review, but they cannot remove a
+  // catalogue row themselves — once approved, a game belongs to the public
+  // library, not to the account that submitted it.
+  if (!admin) return { removed: false, thumbKey: null, rejected: 'not_allowed' };
 
   // Read the key before deleting: afterwards the row is gone and there is no way
   // to know which object in the bucket is now orphaned.
   const row = await env.GAMES.prepare(
-    'SELECT thumb_key FROM games WHERE id = ? AND creator_id = ?',
-  ).bind(id, creatorId).first();
+    'SELECT thumb_key FROM games WHERE id = ?',
+  ).bind(id).first();
+  if (!row) return { removed: false, thumbKey: null };
 
-  // creator_id in the WHERE clause is the authorization check: a player can only
-  // ever delete their own game, regardless of what id they send.
-  const result = await env.GAMES.prepare(
-    'DELETE FROM games WHERE id = ? AND creator_id = ?',
-  ).bind(id, creatorId).run();
+  await env.GAMES.prepare('DELETE FROM games WHERE id = ?').bind(id).run();
 
-  return {
-    removed: (result.meta?.changes ?? 0) > 0,
-    thumbKey: row?.thumb_key || null,
-  };
+  return { removed: true, thumbKey: row.thumb_key || null };
 }
+
+export { GAME_STATUSES };

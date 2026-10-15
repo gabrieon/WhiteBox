@@ -186,6 +186,12 @@ i.wl-swatch.is-absent,
   justify-content: center;
 }
 
+.wl-share-error {
+  margin: 12px 0 0;
+  color: var(--wl-dim);
+  font-size: 12px;
+}
+
 .wl-btn {
   padding: 9px 18px;
   border: 1px solid transparent;

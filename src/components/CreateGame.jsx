@@ -1,17 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../sdk/auth/authContext.js';
-import { fetchCreatedGames, createGame, updateGame, deleteGame, uploadThumb, deleteThumb, thumbUrl } from '../sdk/games/api.js';
+import {
+  fetchMyGames,
+  fetchReviewGames,
+  createGame,
+  updateGame,
+  deleteGame,
+  uploadThumb,
+  deleteThumb,
+  thumbUrl,
+  reviewGame,
+  fetchMe,
+} from '../sdk/games/api.js';
 import { prepareThumbnail, revokePreview } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
+import ModerationQueue from './ModerationQueue.jsx';
 import BuiltinArtwork from './BuiltinArtwork.jsx';
 
 // The Create screen.
 //
 // A created game is a catalogue entry today: title, description, tags and an
-// artwork choice, stored in the database and visible to everyone. It is NOT
-// playable yet — there is no engine attached — so the library renders it with a
-// "Soon" badge rather than a Play button. That honesty matters more than making
-// the button look finished.
+// artwork choice, stored in the database and visible after human approval. It is
+// NOT playable yet — there is no engine attached — so the library renders an
+// approved entry with a "Soon" badge rather than a Play button. That honesty
+// matters more than making the button look finished.
 //
 // Everything the server enforces is enforced here too, so the player gets an
 // instant, specific message instead of a round-trip that fails on a length
@@ -90,6 +102,11 @@ const ERRORS = {
   storage_not_configured: 'Game publishing is not available right now.',
   unauthorized: 'Your session expired. Sign in again and retry.',
   origin_not_allowed: 'This site is not allowed to publish games.',
+  not_allowed: 'Only an admin can take that action.',
+  scope_invalid: 'That game list is not available.',
+  status_invalid: 'That review list is not available.',
+  decision_invalid: 'Choose Approve or Reject.',
+  rate_limited: 'Too many requests. Wait a minute and try again.',
   image_not_an_image: 'That file is not an image the browser can read.',
   image_too_large: 'That image is too large. Try a smaller one.',
   image_empty: 'That file was empty.',
@@ -123,6 +140,17 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  // Admin review state. Ownership is checked through /v1/me rather than
+  // inferred from the signed-in profile: the client must not guess who the
+  // owner is, and the queue must never render for anyone else.
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState('pending');
+  const [queue, setQueue] = useState([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueError, setQueueError] = useState('');
+  const [actionId, setActionId] = useState(null);
 
   // Pending thumbnail: compressed in the browser and held here, because a game
   // only gets an id once it exists. It uploads immediately after the POST.
@@ -142,20 +170,62 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
   useEffect(() => {
     if (!isSignedIn || !profileId) return undefined;
     let alive = true;
-    fetchCreatedGames()
-      .then((all) => {
+    // The public catalogue hides pending and rejected entries, so creators
+    // read their own scope here. Without it, a fresh submission would vanish
+    // from this screen the moment it was saved.
+    fetchMyGames()
+      .then((mine) => {
         if (!alive) return;
-        setFetched({ userId: profileId, games: all.filter((g) => g.creatorId === profileId) });
+        setFetched({ userId: profileId, games: mine });
       })
       .catch(() => {
         if (!alive) return;
         setFetched({ userId: profileId, games: [] });
       });
+    fetchMe()
+      .then((me) => {
+        if (!alive) return;
+        setIsAdmin(Boolean(me?.isAdmin));
+      })
+      .catch(() => {
+        if (!alive) return;
+        setIsAdmin(false);
+      });
     return () => { alive = false; };
   }, [isSignedIn, profileId]);
 
+  useEffect(() => {
+    if (!isSignedIn || !isAdmin) return undefined;
+    let alive = true;
+    // Queue refresh on filter or admin change. This resets transient request
+    // state only when its inputs change; completion handlers guard `alive`.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQueueLoading(true);
+    setQueueError('');
+    fetchReviewGames({ status: reviewStatus })
+      .then((games) => {
+        if (!alive) return;
+        setQueue(games);
+        setQueueLoading(false);
+      })
+      .catch((err) => {
+        if (!alive) return;
+        setQueue([]);
+        setQueueLoading(false);
+        setQueueError(describeError(err));
+      });
+    return () => { alive = false; };
+  }, [isSignedIn, isAdmin, reviewStatus]);
+
   const mine = (fetched && fetched.userId === profileId) ? fetched.games : NO_GAMES;
   const loadingMine = isSignedIn && Boolean(profileId) && (!fetched || fetched.userId !== profileId);
+  const canDelete = isAdmin;
+
+  const STATUS_LABELS = {
+    pending: 'Waiting for review',
+    approved: 'Live',
+    rejected: 'Not approved',
+  };
 
   // Optimistic insert so a published game shows up without a second round-trip.
   function remember(game) {
@@ -163,6 +233,27 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       const base = prev && prev.userId === profileId ? prev.games : NO_GAMES;
       return { userId: profileId, games: [game, ...base.filter((g) => g.id !== game.id)] };
     });
+  }
+
+  // Keep the admin queue truthful after a decision or deletion. A game that no
+  // longer belongs to the selected status leaves the list; one that still does
+  // is replaced in place. Leaving a rejected game in the pending list would
+  // invite reviewing it twice.
+  function syncQueue(game) {
+    setQueue((prev) => {
+      if (game.status === reviewStatus) {
+        return prev.map((entry) => (entry.id === game.id ? game : entry));
+      }
+      return prev.filter((entry) => entry.id !== game.id);
+    });
+  }
+
+  function removeFromLists(id) {
+    setFetched((prev) => {
+      if (!prev || prev.userId !== profileId) return prev;
+      return { userId: prev.userId, games: prev.games.filter((g) => g.id !== id) };
+    });
+    setQueue((prev) => prev.filter((entry) => entry.id !== id));
   }
 
   // Client-side gate before touching the network.
@@ -219,6 +310,7 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     }
 
     setError('');
+    setNotice('');
     setBusy(true);
     try {
       const draft = {
@@ -251,10 +343,20 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       }
 
       remember(published);
+      syncQueue(published);
       setEditing(null);
       setTitle('');
       setDescription('');
       setTagsRaw('');
+      if (published.status === 'pending') {
+        setNotice(
+          isEdit
+            ? 'Saved and sent back for review. It stays hidden until it is approved again.'
+            : 'Sent for review. It stays hidden until it is approved.',
+        );
+      } else {
+        setNotice(isEdit ? 'Saved.' : 'Published to the library.');
+      }
       if (isEdit) onUpdated?.(published);
       else onCreated?.(published);
     } catch (err) {
@@ -305,15 +407,36 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     }
   }
 
+  async function handleReview(game, decision) {
+    setQueueError('');
+    setNotice('');
+    setActionId(game.id);
+    try {
+      const decided = await reviewGame(game.id, decision);
+      // A reviewed game can belong to another creator. Only merge it into
+      // "Your games" when the admin is also its creator; otherwise reviewing
+      // someone else's submission would falsely claim authorship.
+      if (decided.creatorId === profileId) remember(decided);
+      syncQueue(decided);
+      setNotice(
+        decided.status === 'approved'
+          ? `"${decided.title}" is now live for everyone.`
+          : `"${decided.title}" stays hidden.`,
+      );
+    } catch (err) {
+      setQueueError(describeError(err));
+    } finally {
+      setActionId(null);
+    }
+  }
+
   async function handleDelete(game) {
     const confirmed = window.confirm(`Delete “${game.title}”? This cannot be undone.`);
     if (!confirmed) return;
+    setError('');
     try {
       await deleteGame(game.id);
-      setFetched((prev) => {
-        if (!prev || prev.userId !== profileId) return prev;
-        return { userId: prev.userId, games: prev.games.filter((g) => g.id !== game.id) };
-      });
+      removeFromLists(game.id);
       onDeleted?.(game);
     } catch (err) {
       setError(describeError(err));
@@ -349,11 +472,12 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
           <h2>{editing ? 'Edit game' : 'Create a game'}</h2>
           <p className="wb-create-lede">
             {editing
-              ? `Editing “${editing.title}”. Changes go live for everyone immediately.`
-              : 'Describe it, pick how it should look, and publish it to the library. You can edit or delete it later.'}
+              ? `Editing “${editing.title}”. Your own approved game returns to review when you save it.`
+              : 'Describe it, pick how it should look, and send it for review. New games appear after approval.'}
           </p>
 
           {error && <div className="wb-modal-error" role="alert">{error}</div>}
+          {notice && <p className="wb-mine-notice" role="status">{notice}</p>}
 
           <label className="wb-field">
             <span className="wb-field-label">Name</span>
@@ -528,8 +652,8 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
             </p>
           </div>
           <p className="wb-create-note">
-            Published games appear in the library for everyone. They carry a
-            &ldquo;Soon&rdquo; badge until the playable build exists.
+            New games stay hidden until they are reviewed. Approved games carry
+            a &ldquo;Soon&rdquo; badge until the playable build exists.
           </p>
         </aside>
       </div>
@@ -556,6 +680,9 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
                 <div className="wb-mine-body">
                   <strong>{game.title}</strong>
                   <span>{game.description}</span>
+                  <span className={`wb-mine-status is-${game.status || 'pending'}`}>
+                    {STATUS_LABELS[game.status] || 'Waiting for review'}
+                  </span>
                 </div>
                 <div className="wb-mine-actions">
                   {game.thumbKey && (
@@ -574,19 +701,34 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
                   >
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    className="wb-mine-delete"
-                    onClick={() => handleDelete(game)}
-                  >
-                    Delete
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="wb-mine-delete"
+                      onClick={() => handleDelete(game)}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {isAdmin && (
+        <ModerationQueue
+          games={queue}
+          status={reviewStatus}
+          onStatusChange={setReviewStatus}
+          actionId={actionId}
+          onReview={handleReview}
+          onDelete={handleDelete}
+          loading={queueLoading}
+          error={queueError}
+        />
+      )}
 
       <BuiltinArtwork />
     </div>

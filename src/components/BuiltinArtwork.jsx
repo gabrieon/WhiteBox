@@ -114,7 +114,7 @@ export default function BuiltinArtwork() {
           return (
             <li key={game.id} className="wb-mine-item">
               <div className="wb-mine-art">
-                <GameArt type={game.type} thumb={override || `/thumbs/${game.id}.jpg`} />
+                <GameArt type={game.type} thumb={override || game.thumbnail || null} />
               </div>
               <div className="wb-mine-body">
                 <strong>{game.title}</strong>

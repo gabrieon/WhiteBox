@@ -69,7 +69,11 @@ export default function Footer({ onNavigate, categories = [] }) {
           <ul>
             <li><a href="#/">Library</a></li>
             <li><button type="button" className="wb-footer-link" onClick={() => onNavigate?.('create')}>Create a game</button></li>
-            <li><a href="#/play/word-lock">WordLock</a></li>
+            {listGames().map((game) => (
+              <li key={game.id}>
+                <a href={`#/play/${game.id}`}>{game.title}</a>
+              </li>
+            ))}
           </ul>
         </nav>
 

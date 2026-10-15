@@ -51,7 +51,7 @@ function readPlays() {  try {
 // Curated trending row. Deliberately short while the library has one built-in
 // game: the row falls back to this shortlist for a visitor with no history, and
 // padding it with ids that no longer exist would only mean dead entries.
-const TRENDING_IDS = ['word-lock'];
+const TRENDING_IDS = ['word-lock', 'pair-vault'];
 
 const ALL_CATEGORIES = 'All';
 
@@ -237,14 +237,30 @@ export default function App() {
   // here must not take the library down, so the list simply stays empty and the
   // built-in games carry on.
   const [createdGames, setCreatedGames] = useState([]);
+  const [createdLoading, setCreatedLoading] = useState(true);
+  const [createdError, setCreatedError] = useState('');
 
   const refreshCreated = useCallback(() => {
+    setCreatedLoading(true);
+    setCreatedError('');
     fetchCreatedGames()
-      .then(setCreatedGames)
-      .catch(() => setCreatedGames([]));
+      .then((games) => {
+        setCreatedGames(games);
+        setCreatedLoading(false);
+      })
+      .catch(() => {
+        // Approved player games are additive: the library still shows built-ins
+        // while this error and its retry explain why community games are absent.
+        setCreatedGames([]);
+        setCreatedError('Could not load player-made games.');
+        setCreatedLoading(false);
+      });
   }, []);
 
   useEffect(() => {
+    // Initial catalogue sync. This intentionally sets loading state on mount;
+    // it runs once per refreshCreated identity, not in response to that state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshCreated();
   }, [refreshCreated]);
 
@@ -580,6 +596,21 @@ export default function App() {
 
         <section className="wb-row">
           <RowHead title="Browse All" count={browse.length} />
+
+          {(createdLoading || createdError) && (
+            <p className="wb-sync" role="status">
+              {createdLoading
+                ? 'Loading player-made games…'
+                : (
+                  <>
+                    {createdError} {' '}
+                    <button type="button" className="wb-sync-retry" onClick={refreshCreated}>
+                      Retry
+                    </button>
+                  </>
+                )}
+            </p>
+          )}
 
           <div className="wb-chips-bar">
             <div className="wb-chips" role="group" aria-label="Filter games">
