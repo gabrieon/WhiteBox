@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   signInWithProvider,
   signInWithEmail,
@@ -46,6 +47,102 @@ const PROVIDERS = [
   { id: 'apple', label: 'Continue with Apple' },
   { id: 'github', label: 'Continue with GitHub' },
 ];
+
+// The dialog is rendered INSIDE the site navigation, which is a fixed,
+// backdrop-filtered element. Both properties create a containing block for
+// `position: fixed` descendants — a real filter implicitly establishes one
+// (backdrop-filter included) — so `inset: 0` resolved against the 60px-tall
+// header instead of the viewport. The panel was centred inside the header and
+// everything below it overflowed upward behind the browser chrome.
+//
+// Portalling the dialog to document.body puts it outside that subtree, so
+// `position: fixed` means what it says again.
+function SignInDialog({ onClose, email, setEmail, sent, setSent, busy, error, handleProvider, handleEmail }) {
+  return (
+    <div
+      className="wb-modal-backdrop"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="wb-modal-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sign in to WhiteBox"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="wb-modal-header">
+          <h3>Sign in to WhiteBox</h3>
+          <button
+            type="button"
+            className="wb-modal-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+
+        {error && (
+          <div className="wb-modal-error" role="alert">{error}</div>
+        )}
+
+        {sent ? (
+          <div className="wb-modal-success">
+            <p>
+              Check <strong>{email}</strong> — we sent you a sign-in link.
+              Open it on this device to finish.
+            </p>
+            <button
+              type="button"
+              className="wb-signin-btn"
+              onClick={() => { setSent(false); setEmail(''); }}
+            >
+              Use a different email
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="wb-provider-list">
+              {PROVIDERS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="wb-provider-btn"
+                  disabled={Boolean(busy)}
+                  onClick={() => handleProvider(p.id)}
+                >
+                  <ProviderMark kind={p.id} />
+                  <span>{busy === p.id ? 'Opening…' : p.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="wb-modal-divider"><span>or use email</span></div>
+
+            <form className="wb-email-form" onSubmit={handleEmail}>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+              <button
+                type="submit"
+                className="wb-signin-btn"
+                disabled={Boolean(busy)}
+              >
+                {busy === 'email' ? 'Sending…' : 'Email me a sign-in link'}
+              </button>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SupabaseAccount() {
   const { profile, isSignedIn, signOut } = useAuth();
@@ -121,89 +218,19 @@ function SupabaseAccount() {
         Sign in
       </button>
 
-      {open && (
-        <div
-          className="wb-modal-backdrop"
-          onClick={() => setOpen(false)}
-          role="presentation"
-        >
-          <div
-            className="wb-modal-card"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Sign in to WhiteBox"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="wb-modal-header">
-              <h3>Sign in to WhiteBox</h3>
-              <button
-                type="button"
-                className="wb-modal-close"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-              >
-                &times;
-              </button>
-            </div>
-
-            {error && (
-              <div className="wb-modal-error" role="alert">{error}</div>
-            )}
-
-            {sent ? (
-              <div className="wb-modal-success">
-                <p>
-                  Check <strong>{email}</strong> — we sent you a sign-in link.
-                  Open it on this device to finish.
-                </p>
-                <button
-                  type="button"
-                  className="wb-signin-btn"
-                  onClick={() => { setSent(false); setEmail(''); }}
-                >
-                  Use a different email
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="wb-provider-list">
-                  {PROVIDERS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="wb-provider-btn"
-                      disabled={Boolean(busy)}
-                      onClick={() => handleProvider(p.id)}
-                    >
-                      <ProviderMark kind={p.id} />
-                      <span>{busy === p.id ? 'Opening…' : p.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="wb-modal-divider"><span>or use email</span></div>
-
-                <form className="wb-email-form" onSubmit={handleEmail}>
-                  <input
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="wb-signin-btn"
-                    disabled={Boolean(busy)}
-                  >
-                    {busy === 'email' ? 'Sending…' : 'Email me a sign-in link'}
-                  </button>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
+      {open && createPortal(
+        <SignInDialog
+          onClose={() => setOpen(false)}
+          email={email}
+          setEmail={setEmail}
+          sent={sent}
+          setSent={setSent}
+          busy={busy}
+          error={error}
+          handleProvider={handleProvider}
+          handleEmail={handleEmail}
+        />,
+        document.body,
       )}
     </div>
   );
