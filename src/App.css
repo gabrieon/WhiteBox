@@ -248,7 +248,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  /* The card is ~560px tall. On a viewport shorter than that (landscape
+     phones, browser chrome eating vertical space), flex centering without
+     overflow clips the top of the card with no way to reach it. Scrollable
+     backdrop + margin:auto on the card centers when it fits and top-pins with
+     scrolling when it doesn't. */
+  overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top, 0px)) 20px max(20px, env(safe-area-inset-bottom, 0px));
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   animation: wb-fade-in 160ms ease;
@@ -257,6 +263,7 @@
 .wb-modal-card {
   width: 100%;
   max-width: 340px;
+  margin: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
