@@ -35,5 +35,10 @@ jobs:
       - name: Run create/quiz tests
         run: npm run test:create
 
+      # The artwork quota is the only thing between a player and the site's
+      # shared Gemini allowance, so its boundaries are worth checking every push.
+      - name: Run artwork quota tests
+        run: npm run test:artwork
+
       - name: Build the site bundle
         run: npm run build
