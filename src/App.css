@@ -688,19 +688,23 @@
   --pink: #c9c9c9;
 }
 
+/* Card artwork is drawn on its own paper, not on the page, so it has to be
+   lifted in step with the theme or every card reads as a dark hole punched in a
+   grey page. These are decorative shapes rather than text, so they are tuned for
+   depth and separation rather than measured against the text thresholds. */
 [data-theme='dark'] .wb-game-art {
   --ink: #e8e8e8;
-  --white: #1c1c1c;
-  --paper: #151515;
-  --gray: #8a8a8a;
-  --line: #3a3a3a;
-  --line-soft: #272727;
-  --lime: #1f1f1f;
-  --coral: #8a8a8a;
-  --mint: #7a7a7a;
-  --lavender: #2b2b2b;
-  --sky: #191919;
-  --pink: #343434;
+  --white: #2b2b2b;
+  --paper: #1e1e1e;
+  --gray: #9a9a9a;
+  --line: #454545;
+  --line-soft: #323232;
+  --lime: #2b2b2b;
+  --coral: #9a9a9a;
+  --mint: #8a8a8a;
+  --lavender: #383838;
+  --sky: #232323;
+  --pink: #424242;
 }
 
 .wb-game-art svg {
@@ -2029,7 +2033,11 @@
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: var(--dim);
+  /* --muted, not --dim. The icon sits on --search-fill, which is a recessed
+     well darker than the page, and --dim measured 4.36:1 there — under AA. It
+     is also a functional control rather than de-emphasised metadata, so it
+     should not have been in the weakest text tier to begin with. */
+  color: var(--muted);
   pointer-events: none;
   transition: color 140ms ease;
 }

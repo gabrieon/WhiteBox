@@ -65,18 +65,20 @@
 }
 
 [data-theme='dark'] {
-  --sitebar-fill: #1c1c1ce0;
+  /* Matches --control-fill at the bar's usual opacity, so the bar composites
+     to the same grey the raised controls on the page do. */
+  --sitebar-fill: #272727e0;
   --sitebar-edge: #ffffff14;
   --sitebar-highlight: #ffffff10;
-  /* Darker than the bar's #1c1c1c, so the field reads as a recessed well. */
-  --search-fill: #121212;
-  --search-fill-hover: #0a0a0a;
+  /* Darker than the bar, so the field reads as a recessed well. */
+  --search-fill: #1a1a1a;
+  --search-fill-hover: #131313;
   --search-edge: #ffffff2e;
 }
 
 /* --- Search field in the bar ------------------------------------------------
-   The field used to be filled with --fill, which on the dark theme is #1c1c1c —
-   the exact colour the bar composites to over #0b0b0b. Same fill, no edge, so the
+   The field used to be filled with --fill, which on the dark theme was the exact
+   colour the bar composited to over the page. Same fill, no edge, so the
    control vanished into the bar it sits on.
 
    Fixed on both axes rather than one: the fill moves off the bar's colour in

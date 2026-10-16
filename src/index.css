@@ -61,35 +61,41 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --paper: #0b0b0b;
-  /* #e8e8e8, not #f2f2f2. The old value measured 18.3:1 against this page —
-     nearly maxed, and near-white small text is the actual source of glare over
-     a long reading session. 16.1:1 is still over three times the AAA
-     requirement of 7:1, so nothing legible is given up for a softer screen. */
+  /* Dark grey rather than black. Pure black read as a void behind the
+     monochrome cards, and lifting the page to #141414 gives the surface ramp
+     somewhere to sit: at #0b0b0b the gap between the page and --fill was only
+     17/255, which left cards and controls looking like holes rather than
+     objects. The ramp below is shifted up together — lifting --paper alone
+     would collapse that gap and undo the filled-control work. */
+  --paper: #141414;
+  /* #e8e8e8, not #f2f2f2. The old value measured 18.3:1 against the page when
+     it was #0b0b0b — nearly maxed, and near-white small text is the actual
+     source of glare over a long reading session. It still clears AAA on the
+     lighter page, so nothing legible is given up for a softer screen. */
   --ink: #e8e8e8;
-  --muted: #8a8a8a;
+  --muted: #9a9a9a;
   /* Clears 4.5:1 on the dark page. */
-  --dim: #7a7a7a;
-  --line: #242424;
-  --surface: #161616;
-  /* Dark grey fill — clearly grey against the #0b0b0b page, and still above
+  --dim: #8a8a8a;
+  --line: #303030;
+  --surface: #1f1f1f;
+  /* Dark grey fill — clearly grey against the #141414 page, and still above
      4.5:1 under --muted text. */
-  --fill: #1c1c1c;
+  --fill: #272727;
   /* The danger slot is a light neutral in dark mode rather than red: a saturated
-     red on black vibrates badly at small sizes. Kept on the same --ink step so
-     there is exactly one bright neutral in the theme. */
+     red on a dark ground vibrates badly at small sizes. Kept on the same --ink
+     step so there is exactly one bright neutral in the theme. */
   --red: #e8e8e8;
   --red-hover: #ffffff;
   --red-pressed: #d8d8d8;
-  --on-red: #0b0b0b;
+  --on-red: #141414;
 
   /* --- Filled controls -------------------------------------------------
      Mirror of the light-theme tokens. The dark fill sits a clear step above
-     the #0b0b0b page so a control never disappears into the background, and
+     the #141414 page so a control never disappears into the background, and
      the hover step goes lighter rather than darker — on a dark surface,
      "darker on hover" reads as disabled. */
-  --control-fill: #1c1c1c;
-  --control-fill-hover: #2b2b2b;
+  --control-fill: #272727;
+  --control-fill-hover: #353535;
   --control-edge: #ffffff14;
   --control-ink: #e8e8e8;
 
@@ -101,8 +107,8 @@
      lighter step clears it comfortably. */
   --accent-text: #7aa2f7;
 
-  --hud: rgba(16, 16, 16, 0.85);
-  --hud-soft: rgba(16, 16, 16, 0.6);
+  --hud: rgba(31, 31, 31, 0.85);
+  --hud-soft: rgba(31, 31, 31, 0.6);
 }
 
 :root {
