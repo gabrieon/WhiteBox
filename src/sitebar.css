@@ -129,19 +129,18 @@
   gap: 6px;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--control-edge);
   border-radius: 999px;
-  background: transparent;
-  color: var(--ink);
+  background: var(--control-fill);
+  color: var(--control-ink);
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition: background-color 140ms ease;
 }
 
 .wb-sitebar .wb-create-btn:hover {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--control-fill-hover);
 }
 
 /* The bar floats over the page, so the first rows need clearance beneath it. */
