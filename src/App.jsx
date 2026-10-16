@@ -149,6 +149,29 @@ export default function App() {
 
   const { isSignedIn, profile } = useAuth();
 
+  // Artwork overrides for built-in games, keyed by game id. Public read, so it
+  // loads for signed-out visitors too; a failure just means cards fall back to
+  // the artwork checked into the repository.
+  //
+  // Declared above the curated rows because they resolve games through
+  // `resolveGame`, which reads this map.
+  const [builtinThumbs, setBuiltinThumbs] = useState({});
+
+  // Single resolver for a built-in game by id, with the owner's artwork override
+  // applied.
+  //
+  // This exists because three call sites reached for `findGame` directly and
+  // silently bypassed the override: Browse All drew from `library` (which applied
+  // it) while Trending, Continue Playing and Top Played drew from the raw
+  // registry, so a replaced thumbnail appeared in one row and nowhere else.
+  // Every id -> game lookup now goes through here.
+  const resolveGame = useCallback((id) => {
+    const game = findGame(id);
+    if (!game) return null;
+    const override = builtinThumbs[id];
+    return override ? { ...game, builtinThumb: override } : game;
+  }, [builtinThumbs]);
+
   // Once per sign-in, merge the account's saved runs into this device (newer
   // copy wins per game) so progress follows the player across devices.
   const profileId = profile?.id || null;
@@ -183,17 +206,17 @@ export default function App() {
     }
     return [...activity.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([id]) => findGame(id))
+      .map(([id]) => resolveGame(id))
       .filter(Boolean)
       .slice(0, 6);
-  }, [plays, progressAt]);
+  }, [plays, progressAt, resolveGame]);
 
   const topPlayed = useMemo(() => Object.entries(plays)
     .filter(([, entry]) => entry.c > 0)
     .sort((a, b) => b[1].c - a[1].c)
-    .map(([id]) => findGame(id))
+    .map(([id]) => resolveGame(id))
     .filter(Boolean)
-    .slice(0, 6), [plays]);
+    .slice(0, 6), [plays, resolveGame]);
 
   // --- trending ---------------------------------------------------------------
   // Derived from what this player actually opened, weighted toward recent
@@ -214,7 +237,7 @@ export default function App() {
       })
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
-      .map((x) => findGame(x.id))
+      .map((x) => resolveGame(x.id))
       .filter(Boolean);
 
     // Fewer than three opens is noise, not a ranking, so those get ignored in
@@ -225,12 +248,12 @@ export default function App() {
     // handful of plays still sees something worth clicking.
     for (const id of TRENDING_IDS) {
       if (picks.length >= 6) break;
-      const game = findGame(id);
+      const game = resolveGame(id);
       if (game && !picks.some((p) => p.id === game.id)) picks.push(game);
     }
 
     return picks;
-  }, [plays, now]);
+  }, [plays, now, resolveGame]);
 
   // --- created games --------------------------------------------------------
   // Player-published entries live in the database, not the registry. A failure
@@ -267,11 +290,6 @@ export default function App() {
   // The registry holds built-ins; the database holds player creations. Merging
   // them here means every downstream filter, sort and search sees one list.
   // A created game can never shadow a built-in: registry ids win.
-  // Artwork overrides for built-in games, keyed by game id. Public read, so
-  // it loads for signed-out visitors too; a failure just means cards fall
-  // back to the artwork checked into the repository.
-  const [builtinThumbs, setBuiltinThumbs] = useState({});
-
   useEffect(() => {
     let alive = true;
     fetchBuiltinThumbs()
