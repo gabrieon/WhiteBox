@@ -584,7 +584,7 @@ async function handleRequest(request, env) {
         return json({ ok: true, url: stored.url }, 200, authCorsHeaders);
       } catch (err) {
         const reason = err?.message || 'upload_failed';
-        const status = reason === 'not_allowed' ? 403 : 400;
+        const status = reason === 'not_admin' ? 403 : 400;
         return json({ error: reason }, status, authCorsHeaders);
       }
     }
@@ -603,7 +603,7 @@ async function handleRequest(request, env) {
         return json({ ok: true }, 200, authCorsHeaders);
       } catch (err) {
         const reason = err?.message || 'clear_failed';
-        return json({ error: reason }, reason === 'not_allowed' ? 403 : 400, authCorsHeaders);
+        return json({ error: reason }, reason === 'not_admin' ? 403 : 400, authCorsHeaders);
       }
     }
 

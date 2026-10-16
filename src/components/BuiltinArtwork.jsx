@@ -43,9 +43,25 @@ export default function BuiltinArtwork() {
     // Ownership is not. Only the owner gets the editing controls at all; the
     // Worker would reject anyone else, so rendering the panel for them would
     // just be a button that always fails.
+    //
+    // The failure is surfaced rather than swallowed: a rejected /v1/me is what a
+    // misconfigured ADMIN_USER_IDS list looks like, and hiding it behind a
+    // silently absent panel is exactly the confusing part of the original bug.
     fetchMe()
-      .then((me) => { if (alive) setIsAdmin(Boolean(me && me.isAdmin)); })
-      .catch(() => { if (alive) setIsAdmin(false); })
+      .then((me) => {
+        if (!alive) return;
+        setIsAdmin(Boolean(me && me.isAdmin));
+        if (!me || !me.isAdmin) {
+          setError(
+            `Signed in as ${me?.id || 'an unidentified account'}, which is not in ADMIN_USER_IDS. Add that id to the Worker's ADMIN_USER_IDS var to enable built-in artwork editing.`,
+          );
+        }
+      })
+      .catch(() => {
+        if (!alive) return;
+        setIsAdmin(false);
+        setError('Could not verify admin access. Sign in again and retry.');
+      })
       .finally(() => { if (alive) setChecked(true); });
 
     return () => { alive = false; };
@@ -94,8 +110,9 @@ export default function BuiltinArtwork() {
   }
 
   // Nothing renders until the ownership check settles, so the panel never flashes
-  // into view for a signed-out visitor and then disappears.
-  if (builtins.length === 0 || !checked || !isAdmin) return null;
+  // into view for a signed-out visitor and then disappears. A signed-in
+  // non-admin still gets the explanatory message rather than a silent nothing.
+  if (builtins.length === 0 || !checked || (!isAdmin && !error)) return null;
 
   return (
     <section className="wb-create-mine">

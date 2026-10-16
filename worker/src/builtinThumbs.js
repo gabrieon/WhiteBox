@@ -16,8 +16,13 @@ const BUILTIN_PREFIX = 'builtin';
 // Only these ids may change built-in artwork. Configured as a Worker var rather
 // than hardcoded so a new owner is a config change, not a code change.
 function isAdmin(env, userId) {
+  // A missing caller can never be an admin, and returning true for it would let
+  // an unauthenticated request through every `!isAdmin(...)` guard in the app.
+  if (!userId || typeof userId !== 'string') return false;
   const raw = env.ADMIN_USER_IDS || '';
-  return raw.split(',').map((s) => s.trim()).filter(Boolean).includes(userId);
+  const ids = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (ids.length === 0) return false;
+  return ids.includes(userId);
 }
 
 /** Public map of game id -> thumbnail URL. Safe to read unauthenticated. */
@@ -41,7 +46,10 @@ function builtinKey(gameId) {
  * @returns {{url: string}} on success, or throws with a reason.
  */
 export async function setBuiltinThumb(env, gameId, userId, request) {
-  if (!isAdmin(env, userId)) throw new Error('not_allowed');
+  // The reason names the problem. A bare `not_allowed` is indistinguishable from
+  // "you are not the owner" and from "no admins are configured", which is how a
+  // misconfigured ADMIN_USER_IDS list presents as an unexplained failure.
+  if (!isAdmin(env, userId && userId.id)) throw new Error('not_admin');
   if (!env.GAMES) throw new Error('storage_not_configured');
 
   // readUpload already throws short, machine-readable reasons
@@ -63,7 +71,7 @@ export async function setBuiltinThumb(env, gameId, userId, request) {
 
 /** Restore the shipped artwork by dropping the override. */
 export async function clearBuiltinThumb(env, gameId, userId) {
-  if (!isAdmin(env, userId)) throw new Error('not_allowed');
+  if (!isAdmin(env, userId && userId.id)) throw new Error('not_admin');
   if (!env.GAMES) return false;
 
   const row = await env.GAMES.prepare(

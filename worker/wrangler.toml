@@ -64,9 +64,16 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelykno
 # Supabase Storage bucket holding player-uploaded thumbnails. Must match the
 # bucket created by worker/supabase-storage-setup.sql.
 THUMBS_BUCKET = "game-thumbs"
-# User ids allowed to change built-in game artwork (and, once moderation lands,
-# to approve or reject player games). Comma-separated Supabase user ids.
-# Current owner: manoj.kumar10121977@gmail.com
+# Supabase user ids allowed to administer the catalogue: replace built-in game
+# artwork, and approve or reject player-submitted games. Comma-separated.
+#
+# IMPORTANT: this MUST be your OWN Supabase user id, because the built-in
+# artwork panel is rendered only for accounts in this list, and an id belonging
+# to a different account makes the panel fail with `not_allowed` for the owner.
+#
+# To confirm your own id: sign in at https://rarelyknown.in/#/create, then open
+# https://rarelyknown.in/#/create?debug=session — `id` is the Supabase user id.
+# It looks like a UUID, e.g. bb64d52b-91fe-4d1e-b955-f035d631eb06.
 ADMIN_USER_IDS = "bb64d52b-91fe-4d1e-b955-f035d631eb06"
 
 [observability]

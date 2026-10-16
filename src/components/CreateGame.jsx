@@ -103,6 +103,8 @@ const ERRORS = {
   unauthorized: 'Your session expired. Sign in again and retry.',
   origin_not_allowed: 'This site is not allowed to publish games.',
   not_allowed: 'Only an admin can take that action.',
+  not_admin:
+    'This account is not listed as an admin, so it cannot change built-in artwork. Sign in with the owner account, or ask the owner to add this account id to ADMIN_USER_IDS.',
   scope_invalid: 'That game list is not available.',
   status_invalid: 'That review list is not available.',
   decision_invalid: 'Choose Approve or Reject.',
