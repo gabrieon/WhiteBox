@@ -7,8 +7,10 @@
 //
 // Version the cache name on every meaningful change to this file. There is no
 // update UI, so an old worker must age itself out rather than wait for the
-// player to notice.
-const CACHE_VERSION = 'whitebox-shell-v1';
+// player to notice. v2 exists because v1 cached an SPA-fallback HTML page
+// under a hashed CSS URL during a deploy window — cacheFirst stored the 200
+// HTML response as if it were the stylesheet, and every later load reused it.
+const CACHE_VERSION = 'whitebox-shell-v2';
 const APP_SHELL = [
   '/',
   '/site.webmanifest',
@@ -43,7 +45,13 @@ function cacheFirst(request) {
     return fetch(request).then((response) => {
       // Only cache clean, complete responses. Opaque or error responses would
       // poison the cache with something the player cannot inspect.
-      if (response && response.ok) {
+      //
+      // And never cache HTML under an asset URL: during a deploy window the
+      // SPA fallback can answer a hashed-asset request with index.html (still
+      // HTTP 200), and storing that poisons every later load with an
+      // unstyled — or blank — page that no server-side fix can reach.
+      const contentType = response?.headers.get('Content-Type') || '';
+      if (response && response.ok && !contentType.includes('text/html')) {
         const copy = response.clone();
         caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
       }
@@ -55,7 +63,12 @@ function cacheFirst(request) {
 function networkFirst(request, fallback) {
   return fetch(request)
     .then((response) => {
-      if (response && response.ok) {
+      // Same poison rule as cacheFirst, except a navigation legitimately IS
+      // an HTML document. A stable-name file that answers with HTML is the
+      // SPA fallback talking, not the file.
+      const contentType = response?.headers.get('Content-Type') || '';
+      const htmlExpected = request.mode === 'navigate';
+      if (response && response.ok && (htmlExpected || !contentType.includes('text/html'))) {
         const copy = response.clone();
         caches.open(CACHE_VERSION).then((cache) => cache.put(fallback, copy));
       }
