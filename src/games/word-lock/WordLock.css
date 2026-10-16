@@ -36,7 +36,7 @@
 
 .wl-logo {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -51,7 +51,7 @@
   color: var(--wl-text);
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   transition: background-color 140ms ease;
 }
@@ -148,7 +148,7 @@ i.wl-swatch.is-absent,
   margin: 14px 0 0;
   text-align: center;
   color: var(--wl-amber-hi);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   min-height: 16px;
 }
@@ -165,14 +165,14 @@ i.wl-swatch.is-absent,
 
 .wl-outcome-title {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
 .wl-outcome-answer {
   margin: 0 0 16px;
   color: var(--wl-dim);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .wl-outcome-answer strong {
@@ -190,7 +190,7 @@ i.wl-swatch.is-absent,
 .wl-share-error {
   margin: 12px 0 0;
   color: var(--wl-dim);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wl-btn {
@@ -201,7 +201,7 @@ i.wl-swatch.is-absent,
   color: #000;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -241,7 +241,7 @@ i.wl-swatch.is-absent,
   color: var(--wl-text);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -249,7 +249,7 @@ i.wl-swatch.is-absent,
 .wl-key.is-wide {
   flex: 1.5 1 0;
   max-width: 66px;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .wl-key:disabled {
@@ -270,7 +270,7 @@ i.wl-swatch.is-absent,
   justify-content: center;
   margin: 18px 0 0;
   color: var(--wl-dim);
-  font-size: 10px;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -351,7 +351,7 @@ i.wl-swatch.is-absent,
 .wl-clue-tag {
   flex: none;
   color: #7a7a7a;
-  font-size: 9px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -359,23 +359,23 @@ i.wl-swatch.is-absent,
 
 .wl-clue-text {
   color: #dcdcdc;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 .wl-credit {
   display: block;
   margin-top: 6px;
   color: #7a7a7a;
-  font-size: 9px;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
 }
 
 .wl-outcome-clue {
   margin: 0 0 12px;
   color: #9a9a9a;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
 }
 
 .wl-outcome-clue em {
@@ -396,7 +396,7 @@ i.wl-swatch.is-absent,
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
   color: var(--wl-dim);
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 0.04em;
 }
 

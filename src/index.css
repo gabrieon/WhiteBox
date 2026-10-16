@@ -119,6 +119,50 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* --- Type scale -------------------------------------------------------
+     Every font-size in the app resolves to one of these steps. 12px is the
+     floor: anything smaller (the old 9/10/11px metadata) sat under the readable
+     threshold on a phone, so it comes up to xs rather than getting its own
+     step. Display sizes above 3xl stay per-case clamps — a fluid hero is not a
+     scale step — but their endpoints land on scale values where they can.
+
+     Line-heights are four named steps. Titles sit tight, labels snug, body at
+     normal, prose relaxed. A bare `line-height: 1` (icons, single-line
+     lockups) is not text rhythm and stays literal. */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  /* --- Spacing grid ------------------------------------------------------
+     Layout gaps and section padding resolve to these steps. 4px is the unit;
+     component padding lives on even multiples, section gaps on 12+. Anything
+     off-grid (10/14/18/28) gets rounded to the nearest step when touched. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* --- Radius -------------------------------------------------------------
+     Inputs and small controls share sm; cards and panels share md; large
+     sheets share lg; capsules are always pill. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
 }
 
 * {

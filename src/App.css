@@ -37,7 +37,7 @@
   justify-self: start;
   margin: 0;
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: var(--text-xl);
   font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1;
@@ -151,7 +151,7 @@
 
 .wb-signin-name {
   color: var(--ink);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -165,7 +165,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   transition: background-color 140ms ease;
 }
@@ -187,7 +187,7 @@
   background: var(--glass-fill);
   color: var(--ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.01em;
   overflow: hidden;
@@ -289,7 +289,7 @@
 
 .wb-modal-header h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -304,7 +304,7 @@
   border-radius: 50%;
   background: var(--control-fill);
   color: inherit;
-  font-size: 22px;
+  font-size: var(--text-2xl);
   line-height: 1;
   cursor: pointer;
   transition: background-color 140ms ease;
@@ -331,7 +331,7 @@
   border-radius: 10px;
   background: var(--control-fill);
   color: var(--control-ink);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 130ms ease, border-color 130ms ease;
@@ -352,7 +352,7 @@
   align-items: center;
   gap: 10px;
   color: var(--ink);
-  font-size: 11px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.5;
@@ -380,7 +380,7 @@
   border-radius: 10px;
   background: var(--control-fill);
   color: var(--control-ink);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .wb-email-form input:focus {
@@ -393,15 +393,15 @@
   border-radius: 8px;
   background: color-mix(in srgb, #d32f2f 14%, transparent);
   color: #d32f2f;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wb-modal-success {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 .wb-modal-success p {
@@ -427,12 +427,12 @@
 
 .wb-signin-note {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .wb-signin-note code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 /* ---------- game rows ---------- */
@@ -456,7 +456,7 @@
 .wb-row-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: var(--text-2xl);
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -464,7 +464,7 @@
 
 .wb-row-count {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -482,7 +482,7 @@
   border-radius: 999px;
   background: var(--fill);
   color: var(--ink);
-  font-size: 14px;
+  font-size: var(--text-sm);
   outline: none;
 }
 
@@ -518,7 +518,7 @@
 .wb-sync {
   margin: 0 0 12px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wb-sync-retry {
@@ -529,7 +529,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   transition: background-color 140ms ease;
 }
 
@@ -546,7 +546,7 @@
 
 .wb-sort-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wb-sort-select {
@@ -557,7 +557,7 @@
   background: var(--fill);
   color: var(--ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wb-sort-select:hover {
@@ -577,7 +577,7 @@
   background: var(--fill);
   color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   /* Chips are controls, and a control at weight 400 reads as a label. 600 is
      enough to mark them as tappable without shouting over the card titles
      beneath them. */
@@ -597,7 +597,7 @@
 .wb-row-empty {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 400;
 }
 
@@ -612,7 +612,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   transition: background-color 140ms ease;
 }
@@ -736,10 +736,10 @@
   /* The card title is what a player actually scans for when deciding what to
      open, so it carries the weight in the card. 15px read as an afterthought
      next to the 24px section header above it — the jump was too steep. */
-  font-size: 17px;
+  font-size: var(--text-lg);
   font-weight: 700;
   letter-spacing: 0;
-  line-height: 1.25;
+  line-height: var(--leading-tight);
   color: var(--ink);
   transition: color 140ms ease;
 }
@@ -774,7 +774,7 @@
   cursor: pointer;
   /* 13px so the label is comfortably readable on the one element that decides
      whether someone opens the game. */
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.02em;
   transition: background-color 140ms ease, transform 170ms ease;
@@ -805,8 +805,8 @@
      label, and this line carries the genre/mode/recency triple. 12px is the
      smallest size that stays comfortable on a phone without looking like a
      footnote. */
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
   letter-spacing: 0.02em;
 }
 
@@ -831,7 +831,7 @@
   padding: 5px 8px;
   background: var(--muted);
   color: var(--paper);
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -873,7 +873,7 @@
   }
 
   .wb-card-title {
-    font-size: 14px;
+    font-size: var(--text-base);
   }
 }
 
@@ -915,7 +915,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   transition: background-color 140ms ease, color 140ms ease, transform 170ms ease;
 }
@@ -943,7 +943,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   transition: background-color 140ms ease;
 }
@@ -974,7 +974,7 @@
 
 .wb-create-form h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 800;
   letter-spacing: -0.01em;
 }
@@ -982,8 +982,8 @@
 .wb-create-lede {
   margin: -8px 0 0;
   opacity: 0.65;
-  font-size: 13px;
-  line-height: 1.55;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
 }
 
 .wb-field {
@@ -993,7 +993,7 @@
 }
 
 .wb-field-label {
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1010,12 +1010,12 @@
   background: var(--paper);
   color: var(--ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .wb-field textarea {
   resize: vertical;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
 }
 
 .wb-field input:focus,
@@ -1027,7 +1027,7 @@
 
 .wb-field-hint {
   opacity: 0.5;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .wb-tag-row {
@@ -1055,8 +1055,8 @@
 .wb-create-note {
   margin: 0;
   opacity: 0.5;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
 }
 
 .wb-create-mine {
@@ -1070,7 +1070,7 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 14px;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -1113,13 +1113,13 @@
 }
 
 .wb-mine-body strong {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .wb-mine-body span {
   opacity: 0.55;
-  font-size: 11px;
+  font-size: var(--text-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1143,7 +1143,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -1162,15 +1162,15 @@
 
 .wb-create-gate h2 {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 800;
 }
 
 .wb-create-gate p {
   margin: 0;
   opacity: 0.65;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
 }
 
 /* --- Thumbnail upload ---------------------------------------------------- */
@@ -1190,7 +1190,7 @@
   color: var(--control-ink);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -1241,7 +1241,7 @@
   align-items: flex-start;
   gap: 6px;
   opacity: 0.65;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .wb-upload-clear {
@@ -1255,7 +1255,7 @@
   color: inherit;
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   transition: background-color 140ms ease;
 }
@@ -1273,7 +1273,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   transition: background-color 140ms ease;
 }
@@ -1333,7 +1333,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.6;
@@ -1354,7 +1354,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1;
   transition: background-color 140ms ease;
 }
@@ -1377,7 +1377,7 @@
   background: var(--control-fill);
   color: var(--control-ink);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 .wb-quiz-options {
@@ -1416,7 +1416,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .wb-quiz-option input[type=text]:focus {
@@ -1433,8 +1433,8 @@
 .wb-quiz-warning {
   margin: 0;
   color: #c02626;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
 }
 
 /* --- AI artwork generator ---------------------------------------------------
@@ -1450,7 +1450,7 @@
 }
 
 .wb-gen-quota {
-  font-size: 11px;
+  font-size: var(--text-xs);
   opacity: 0.55;
 }
 
@@ -1481,8 +1481,8 @@
 
 .wb-gen-note {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
   opacity: 0.5;
 }
 
@@ -1524,7 +1524,7 @@
   padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1551,7 +1551,7 @@
 
 .wb-mine-notice {
   margin: 0 0 10px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--muted);
 }
 
@@ -1610,8 +1610,8 @@
   margin: 0;
   max-width: 42ch;
   color: #9a9a9a;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
 }
 
 .wb-play-cta {
@@ -1623,7 +1623,7 @@
   color: #000000;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1645,7 +1645,7 @@
   color: #e8e8e8;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   transition: background-color 140ms ease;
 }
@@ -1689,7 +1689,7 @@
 .wb-play-rules-sub {
   margin: 10px 0 0;
   color: #9a9a9a;
-  font-size: 13px;
+  font-size: var(--text-sm);
   letter-spacing: 0.02em;
 }
 
@@ -1716,7 +1716,7 @@
   /* The rules are the payload. Everything else on this screen is chrome. */
   font-size: clamp(15px, 3.6vw, 17px);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   text-align: left;
 }
 
@@ -1751,7 +1751,7 @@
   border-radius: 50%;
   background: #e8e8e8;
   color: #000;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -1836,13 +1836,13 @@
 }
 
 .wb-play-remember-text strong {
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
 .wb-play-remember-text span {
   color: #9a9a9a;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 /* Demoted on purpose. Now that a filled "Play" button carries the action, this
@@ -1855,7 +1855,7 @@
      pure black, which fails AA at this size; this is 4.89:1, and is also the
      value --dim uses on the site page. */
   color: #7a7a7a;
-  font-size: 12px;
+  font-size: var(--text-xs);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -1871,7 +1871,7 @@
   place-items: center;
   min-height: 100%;
   color: #9a9a9a;
-  font-size: 13px;
+  font-size: var(--text-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1889,7 +1889,7 @@
 
 .wb-play-error h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: var(--text-lg);
   font-weight: 700;
 }
 
@@ -1897,8 +1897,8 @@
   margin: 0;
   max-width: 44ch;
   color: #9a9a9a;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1923,7 +1923,7 @@
   color: var(--control-ink);
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   transition: background-color 140ms ease;
 }
@@ -1957,13 +1957,13 @@
   color: var(--ink);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
-  line-height: 1.55;
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
 }
 
 .wb-dbg h3 {
   margin: 0 0 10px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1980,7 +1980,7 @@
 .wb-dbg h4 {
   margin: 0 0 6px;
   opacity: 0.6;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2113,7 +2113,7 @@
   align-items: center;
   gap: 9px;
   color: inherit;
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 800;
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -2123,8 +2123,8 @@
   margin: 10px 0 12px;
   max-width: 34ch;
   opacity: 0.6;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
 }
 
 .wb-footer-mail {
@@ -2132,7 +2132,7 @@
   align-items: center;
   min-height: 44px;
   color: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-decoration: none;
   border-bottom: 1px solid currentColor;
@@ -2145,7 +2145,7 @@
 .wb-footer-col h4 {
   margin: 0 0 10px;
   opacity: 0.5;
-  font-size: 10px;
+  font-size: var(--text-xs);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2173,7 +2173,7 @@
   border-radius: 999px;
   background: var(--control-fill);
   color: var(--control-ink);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -2190,11 +2190,11 @@
 .wb-footer-stat {
   margin: 0 0 6px;
   opacity: 0.72;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .wb-footer-stat strong {
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 800;
 }
 
@@ -2207,7 +2207,7 @@
   padding-top: 16px;
   border-top: 1px solid var(--line);
   opacity: 0.5;
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .wb-footer-base p { margin: 0; }
