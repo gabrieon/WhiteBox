@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import GameArt from '../GameArt.jsx';
 import RuleIcon from './RuleIcon.jsx';
+import { thumbUrl } from '../../sdk/games/api.js';
 
 // The play shell.
 //
-// Three stages the player walks through, in order:
-//   1. splash — the game name and a Play control
-//   2. rules  — how it works, dismissable, skippable once
-//   3. game   — the actual component
+// Two stages, in order:
+//   1. rules — what the game is and how it works, dismissable, skippable once
+//   2. game  — the actual component
+//
+// There used to be a splash screen before the rules: artwork, title, tagline,
+// a Play button. It was a loader with extra steps — three taps to start a game
+// — so it was merged into the rules header. One screen now stands between the
+// card and the game.
 //
 // It is a fullscreen overlay inside the SPA rather than a separate origin. A
 // subdomain would mean a full document load every time the player moved between
@@ -44,23 +49,28 @@ function markDismissed(gameId, value) {
 }
 
 export default function PlayShell({ manifest, onExit }) {
-  const [stage, setStage] = useState('splash');
-  const [remember, setRemember] = useState(() => readDismissed(manifest.id));
-
   const rules = Array.isArray(manifest.rules) ? manifest.rules : [];
+
+  // Someone who already dismissed the rules — or a game that declares none —
+  // opens straight into the game. The rules screen is a gate, not a lobby.
+  const [stage, setStage] = useState(() => (
+    readDismissed(manifest.id) || rules.length === 0 ? 'game' : 'rules'
+  ));
+  const [remember, setRemember] = useState(() => readDismissed(manifest.id));
 
   // Icons are declared per game alongside its rules, positionally. A game that
   // omits them, or declares fewer than it has rules, still renders — the missing
   // entries fall back to a neutral glyph rather than leaving a hole in the list.
   const ruleIcons = Array.isArray(manifest.ruleIcons) ? manifest.ruleIcons : [];
 
-  // Someone who already dismissed the rules should not be shown them again, even
-  // if they reload into this screen.
-  const rulesAlreadyDone = remember;
-
-  const begin = useCallback(() => {
-    setStage(rules.length > 0 && !rulesAlreadyDone ? 'rules' : 'game');
-  }, [rules.length, rulesAlreadyDone]);
+  // Same resolution as the card: a player-uploaded photo first, then an owner
+  // override, then a declared thumbnail. The old splash screen only ever read
+  // `type`, so a created game with a photo opened on generated art instead of
+  // the photo its card shows. Resolving it here fixes that as a side effect of
+  // the merge.
+  const photo = manifest.thumbKey
+    ? thumbUrl(manifest)
+    : (manifest.builtinThumb || manifest.thumbnail || manifest.thumbUrl || null);
 
   function chooseRemember(value) {
     setRemember(value);
@@ -79,31 +89,21 @@ export default function PlayShell({ manifest, onExit }) {
 
   return (
     <div className="wb-play">
-      {/* --- stage 1: splash --- */}
-      {stage === 'splash' && (
-        <div className="wb-play-splash">
-          <div className="wb-play-splash-art">
-            <GameArt type={manifest.type} />
-          </div>
-          <h1 className="wb-play-title">{manifest.title}</h1>
-          <p className="wb-play-tagline">{manifest.description}</p>
-          <button type="button" className="wb-play-cta" onClick={begin}>
-            Play
-          </button>
-          <button type="button" className="wb-play-quiet" onClick={onExit}>
-            Back to games
-          </button>
-        </div>
-      )}
-
-      {/* --- stage 2: rules --- */}
+      {/* --- stage 1: rules --- */}
       {stage === 'rules' && (
         <div
           className="wb-play-rules"
           onClick={() => setStage('game')}
         >
           <header className="wb-play-rules-head">
-            <h2 className="wb-play-title">How to play</h2>
+            <div className="wb-play-rules-art">
+              <GameArt type={manifest.type} thumb={photo} />
+            </div>
+            <h1 className="wb-play-title">{manifest.title}</h1>
+            {manifest.description && (
+              <p className="wb-play-tagline">{manifest.description}</p>
+            )}
+            <h2 className="wb-play-rules-heading">How to play</h2>
             <p className="wb-play-rules-sub">
               {rules.length} {rules.length === 1 ? 'step' : 'steps'}, then you&rsquo;re in.
             </p>
@@ -168,12 +168,15 @@ export default function PlayShell({ manifest, onExit }) {
             >
               Play
             </button>
+            <button type="button" className="wb-play-quiet" onClick={onExit}>
+              Back to games
+            </button>
             <p className="wb-play-continue">or click anywhere</p>
           </div>
         </div>
       )}
 
-      {/* --- stage 3: the game --- */}
+      {/* --- stage 2: the game --- */}
       {stage === 'game' && (
         <div className="wb-play-stage">
           <GameRenderer manifest={manifest} onExit={onExit} />

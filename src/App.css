@@ -1574,28 +1574,31 @@
   to { opacity: 1; }
 }
 
-/* --- splash --------------------------------------------------------------- */
+/* --- rules header -----------------------------------------------------------
+   The old splash screen (artwork, title, tagline, Play) was merged here. One
+   screen now stands between the card and the game instead of two, so the
+   header carries the game's identity and the rules carry its instructions. */
 
-.wb-play-splash {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 100%;
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.wb-play-splash-art {
+.wb-play-rules-art {
   width: min(280px, 60vw);
   aspect-ratio: 3 / 2;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
+  margin: 0 auto var(--space-4);
 }
 
-.wb-play-splash-art .wb-game-art {
+.wb-play-rules-art .wb-game-art {
   height: 100%;
+}
+
+/* Smaller than the game title above it. Two competing display sizes in one
+   header would leave the eye unsure which is the subject. */
+.wb-play-rules-heading {
+  margin: var(--space-6) 0 0;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .wb-play-title {
