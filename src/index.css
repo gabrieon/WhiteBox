@@ -188,6 +188,22 @@ input {
   font: inherit;
 }
 
+/* Honour the OS reduced-motion setting. The play shell fade, card hovers,
+   button scales and control transitions are all enhancement, never meaning —
+   the quiz verdict, for example, is instant colour plus a text line, so
+   nothing is lost by standing still. The 0.01ms duration (rather than `none`)
+   keeps transitionend listeners firing for any code that waits on them. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--ink);

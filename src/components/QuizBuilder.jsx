@@ -131,11 +131,19 @@ export default function QuizBuilder({ questions, onChange }) {
                     key={optionIndex}
                     className={`wb-quiz-option${question.answer === optionIndex ? ' is-correct' : ''}`}
                   >
+                    {/* Visible letter, not just a placeholder. A placeholder
+                        vanishes the moment anyone types, leaving four identical
+                        blank fields; the letter gives each option a stable name
+                        whether it is filled in or not. */}
+                    <span className="wb-quiz-letter" aria-hidden="true">
+                      {String.fromCharCode(65 + optionIndex)}
+                    </span>
                     <input
                       type="radio"
                       name={`answer-${index}`}
                       checked={question.answer === optionIndex}
                       onChange={() => update(index, { answer: optionIndex })}
+                      aria-label={`Mark option ${String.fromCharCode(65 + optionIndex)} as the correct answer`}
                     />
                     <input
                       type="text"
@@ -145,6 +153,11 @@ export default function QuizBuilder({ questions, onChange }) {
                       placeholder={`Option ${optionIndex + 1}`}
                       aria-label={`Question ${index + 1} option ${optionIndex + 1}`}
                     />
+                    {/* The green border alone says "correct" only to people who
+                        already know the convention. The tag says it in words. */}
+                    {question.answer === optionIndex && (
+                      <span className="wb-quiz-correct">correct</span>
+                    )}
                   </label>
                 ))}
               </div>

@@ -1,6 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { prepareQuestion } from './shuffle.js';
 import './PlayerQuiz.css';
+
+// Answer feedback holds for just under a second before advancing. Tapping an
+// option used to jump straight to the next question with no confirmation, so a
+// player never learned whether they were right — the core loop of a quiz had
+// no loop in it. The reveal names the verdict in text as well as colour, since
+// colour alone is invisible to a sizeable minority.
+const REVEAL_MS = 850;
 
 // Player Quiz — the runtime for a quiz a player created.
 //
@@ -57,10 +64,22 @@ export default function PlayerQuiz({ manifest, onExit }) {
   const [finished, setFinished] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [elapsed, setElapsed] = useState(0);
+  // The option just tapped, while its verdict is on screen. Null the rest of
+  // the time. Input stays locked until the reveal clears.
+  const [reveal, setReveal] = useState(null);
+  const revealTimer = useRef(null);
+
+  // A reveal that outlives the component must not advance a dead quiz. Leaving
+  // the game mid-reveal and coming back would otherwise apply a stale timeout
+  // to a fresh round.
+  useEffect(() => () => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+  }, []);
 
   const current = prepared[index] || null;
-  const locked = finished || !current;
+  const locked = finished || !current || reveal !== null;
   const correctCount = picks.filter((pick, i) => pick === prepared[i]?.answer).length;
+  const revealedCorrect = reveal !== null && current && reveal === current.answer;
 
   const choose = useCallback((optionIndex) => {
     if (locked || !current) return;
@@ -74,16 +93,27 @@ export default function PlayerQuiz({ manifest, onExit }) {
 
     const nextPicks = [...picks, optionIndex];
     setPicks(nextPicks);
+    setReveal(optionIndex);
 
-    if (index + 1 >= prepared.length) {
-      setFinished(true);
-      setElapsed(now - start);
-    } else {
-      setIndex(index + 1);
-    }
+    revealTimer.current = setTimeout(() => {
+      revealTimer.current = null;
+      setReveal(null);
+      if (index + 1 >= prepared.length) {
+        setFinished(true);
+        setElapsed(now - start);
+      } else {
+        setIndex(index + 1);
+      }
+    }, REVEAL_MS);
   }, [current, locked, index, picks, prepared.length, startedAt]);
 
   const restart = useCallback(() => {
+    // A pending reveal belongs to the round being abandoned. Without this,
+    // replaying mid-reveal fires the old timeout into the new round.
+    if (revealTimer.current) {
+      clearTimeout(revealTimer.current);
+      revealTimer.current = null;
+    }
     // Bumping the round re-runs the shuffle above. Resetting progress in the
     // same batch keeps the two from disagreeing for a frame.
     setRound((r) => r + 1);
@@ -92,6 +122,7 @@ export default function PlayerQuiz({ manifest, onExit }) {
     setFinished(false);
     setStartedAt(null);
     setElapsed(0);
+    setReveal(null);
   }, []);
 
   if (questions.length === 0) {
@@ -149,20 +180,36 @@ export default function PlayerQuiz({ manifest, onExit }) {
         <div className="pz-card">
           <h2 className="pz-prompt">{current.prompt}</h2>
           <div className="pz-options">
-            {current.options.map((option, optionIndex) => (
-              <button
-                key={optionIndex}
-                type="button"
-                className="pz-option"
-                onClick={() => choose(optionIndex)}
-              >
-                <span className="pz-letter" aria-hidden="true">
-                  {String.fromCharCode(65 + optionIndex)}
-                </span>
-                <span>{option}</span>
-              </button>
-            ))}
+            {current.options.map((option, optionIndex) => {
+              const isAnswer = reveal !== null && optionIndex === current.answer;
+              const isMiss = reveal !== null && optionIndex === reveal && reveal !== current.answer;
+              return (
+                <button
+                  key={optionIndex}
+                  type="button"
+                  className={`pz-option${isAnswer ? ' is-right' : ''}${isMiss ? ' is-wrong' : ''}`}
+                  onClick={() => choose(optionIndex)}
+                  disabled={reveal !== null}
+                  aria-pressed={reveal === null ? undefined : optionIndex === reveal}
+                >
+                  <span className="pz-letter" aria-hidden="true">
+                    {String.fromCharCode(65 + optionIndex)}
+                  </span>
+                  <span>{option}</span>
+                </button>
+              );
+            })}
           </div>
+          {/* Announced, not just coloured. A red border means nothing to a
+              screen reader, and the reveal vanishes in under a second — without
+              this, the verdict is never perceivable at all. */}
+          {reveal !== null && (
+            <p className="pz-verdict" role="status">
+              {revealedCorrect
+                ? 'Correct.'
+                : `Not quite — the answer was ${current.options[current.answer]}.`}
+            </p>
+          )}
         </div>
       )}
 

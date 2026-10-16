@@ -148,6 +148,41 @@
   font-weight: 800;
 }
 
+/* Answer feedback. The verdict is instant colour, not animation, so there is
+   nothing for reduced-motion to suppress — and the text verdict below the
+   options carries the meaning for anyone who cannot see the colour. */
+.pz-option.is-right {
+  border-color: var(--pz-right);
+  box-shadow: inset 0 0 0 1px var(--pz-right);
+  background: #1d2b1d;
+}
+
+.pz-option.is-right .pz-letter {
+  background: var(--pz-right);
+  color: #fff;
+}
+
+.pz-option.is-wrong {
+  border-color: var(--pz-wrong);
+  box-shadow: inset 0 0 0 1px var(--pz-wrong);
+  background: #2b1a1a;
+}
+
+.pz-option.is-wrong .pz-letter {
+  background: var(--pz-wrong);
+  color: #fff;
+}
+
+.pz-option:disabled {
+  cursor: default;
+}
+
+.pz-verdict {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 .pz-outcome {
   width: 100%;
   max-width: 560px;

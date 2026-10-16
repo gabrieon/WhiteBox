@@ -17,8 +17,12 @@ import { listGames } from '../games/registry.js';
 const CONTACT_EMAIL = 'manoj.kumar10121977@gmail.com';
 
 export default function Footer({ onNavigate, categories = [] }) {
-  // Public read, so this renders for signed-out visitors too. A failure just
-  // means the counter is omitted rather than showing a wrong number.
+  // Public read, so this renders for signed-out visitors too.
+  //
+  // The column always renders, even before the fetch lands or when it fails.
+  // The alternative — mounting the column only on success — shifts the whole
+  // footer grid sideways a beat after load, and leaves a two-column footer on
+  // a network failure. Placeholders are honest about not knowing yet.
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
@@ -31,6 +35,8 @@ export default function Footer({ onNavigate, categories = [] }) {
       .catch(() => {});
     return () => { alive = false; };
   }, []);
+
+  const total = stats ? stats.builtIn + stats.created : null;
 
   return (
     <footer className="wb-footer">
@@ -77,20 +83,18 @@ export default function Footer({ onNavigate, categories = [] }) {
           </ul>
         </nav>
 
-        {stats && (
-          <div className="wb-footer-col">
+        <div className="wb-footer-col" aria-busy={stats ? undefined : true}>
             <h4>Library</h4>
             <p className="wb-footer-stat">
-              <strong>{stats.builtIn + stats.created}</strong> games
+              <strong>{total ?? '–'}</strong> games
             </p>
             <p className="wb-footer-stat">
-              <strong>{stats.builtIn}</strong> built in
+              <strong>{stats?.builtIn ?? '–'}</strong> built in
             </p>
             <p className="wb-footer-stat">
-              <strong>{stats.created}</strong> made by players
+              <strong>{stats?.created ?? '–'}</strong> made by players
             </p>
           </div>
-        )}
       </div>
 
       <div className="wb-footer-base">
