@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import GameArt from '../GameArt.jsx';
+import RuleIcon from './RuleIcon.jsx';
 
 // The play shell.
 //
@@ -48,6 +49,11 @@ export default function PlayShell({ manifest, onExit }) {
 
   const rules = Array.isArray(manifest.rules) ? manifest.rules : [];
 
+  // Icons are declared per game alongside its rules, positionally. A game that
+  // omits them, or declares fewer than it has rules, still renders — the missing
+  // entries fall back to a neutral glyph rather than leaving a hole in the list.
+  const ruleIcons = Array.isArray(manifest.ruleIcons) ? manifest.ruleIcons : [];
+
   // Someone who already dismissed the rules should not be shown them again, even
   // if they reload into this screen.
   const rulesAlreadyDone = remember;
@@ -94,39 +100,75 @@ export default function PlayShell({ manifest, onExit }) {
       {stage === 'rules' && (
         <div
           className="wb-play-rules"
-          role="button"
-          tabIndex={0}
           onClick={() => setStage('game')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setStage('game');
-            }
-          }}
         >
-          <h2 className="wb-play-title">How to play</h2>
-          <ul className="wb-play-rules-list">
-            {rules.map((rule) => (
-              <li key={rule}>{rule}</li>
+          <header className="wb-play-rules-head">
+            <h2 className="wb-play-title">How to play</h2>
+            <p className="wb-play-rules-sub">
+              {rules.length} {rules.length === 1 ? 'step' : 'steps'}, then you&rsquo;re in.
+            </p>
+          </header>
+
+          {/* Rules are a list of discrete rows, not a paragraph. The eye needs
+              somewhere to land between them; prose forces it back to the start
+              every line. */}
+          <ol className="wb-play-rules-list">
+            {rules.map((rule, i) => (
+              <li className="wb-play-rule" key={rule}>
+                {/* The number says order and the glyph says meaning. Order
+                    matters in instructions — "then this, then that" — and a bare
+                    icon loses it, while a bare number is slow to scan. */}
+                <span className="wb-play-rule-mark" aria-hidden="true">
+                  <RuleIcon name={ruleIcons[i]} />
+                  <span className="wb-play-rule-n">{i + 1}</span>
+                </span>
+                <span className="wb-play-rule-text">{rule}</span>
+              </li>
             ))}
-          </ul>
+          </ol>
 
           <div
             className="wb-play-rules-foot"
-            // The whole panel advances on click, so the checkbox has to stop
-            // propagation or toggling it would skip straight into the game.
+            // The panel advances on any click, so the controls inside it have to
+            // stop it or toggling "don't show again" would skip the game before
+            // the choice was even recorded.
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
           >
+            {/* "Don't show again" is the only thing on this screen that
+                persists, and it used to be a 15px checkbox with 12px type. It
+                is a real preference with real consequences — skip the rules
+                forever — so it gets a full-width target a thumb can hit. */}
             <label className="wb-play-remember">
               <input
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => chooseRemember(e.target.checked)}
               />
-              <span>Don&rsquo;t show again</span>
+              <span className="wb-play-remember-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                  stroke="currentColor" strokeWidth="3.2"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.5l4.5 4.5L19 7" />
+                </svg>
+              </span>
+              <span className="wb-play-remember-text">
+                <strong>Don&rsquo;t show this again</strong>
+                <span>Skips these steps for this game on this device.</span>
+              </span>
             </label>
-            <p className="wb-play-continue">Click anywhere to continue</p>
+
+            {/* The panel is still click-anywhere to continue — that is the
+                agreed flow — but "click anywhere" is an invisible affordance,
+                so the screen carries a visible primary target. Tapping the
+                panel and pressing this both advance; nothing is lost. */}
+            <button
+              type="button"
+              className="wb-play-cta"
+              onClick={() => setStage('game')}
+            >
+              Play
+            </button>
+            <p className="wb-play-continue">or click anywhere</p>
           </div>
         </div>
       )}

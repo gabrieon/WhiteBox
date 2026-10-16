@@ -61,6 +61,31 @@ database_id = "794832a6-f3bb-45eb-b7d2-38c0cce4de81"
 # Comma-separated. Localhost dev origins are always allowed.
 [vars]
 ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,https://rarelyknown.in,https://www.rarelyknown.in"
+
+# --- AI artwork -------------------------------------------------------------
+#
+# Set with:  npx wrangler secret put GEMINI_API_KEY
+#
+# The key is a Gemini API key from https://aistudio.google.com/apikey — NOT the
+# Google OAuth client id above, which is a different credential for a different
+# job. Without it, /v1/artwork/generate answers `artwork_not_configured` and the
+# Generate button reports that instead of failing vaguely.
+#
+# Gemini's request limits are per PROJECT, not per key, so every player who
+# generates artwork shares one pool. `ARTWORK_DAILY_LIMIT` is deliberately set
+# well below whatever your actual quota is: it is an abuse ceiling, not an
+# allowance, and you cannot see your real limit until you look in AI Studio.
+#
+# Raise it only after checking "View your active rate limits" in AI Studio.
+
+# Model. The Flash Lite image model is the cheapest and is 1K-only, which is
+# already more than the 640px the card pipeline needs. Swap to
+# `gemini-nano-banana-2.1` for noticeably better art if the quota allows it.
+ARTWORK_MODEL = "gemini-3.1-flash-lite-image"
+
+# Generated images per account per day, counted from midnight Pacific to match
+# Gemini's own daily reset. See worker/src/artwork.js.
+ARTWORK_DAILY_LIMIT = "10"
 # Supabase Storage bucket holding player-uploaded thumbnails. Must match the
 # bucket created by worker/supabase-storage-setup.sql.
 THUMBS_BUCKET = "game-thumbs"

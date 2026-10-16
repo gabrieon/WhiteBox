@@ -19,6 +19,10 @@ export default defineManifest({
   input: ['keyboard', 'touch'],
 
   // Consumed by the play shell's rules screen.
+  // Consumed by the play shell's rules screen. `ruleIcons` lines up
+  // positionally with `rules` — the number badge carries the order, the glyph
+  // carries the meaning, and a rule without a glyph falls back to a neutral one
+  // rather than breaking the row's alignment.
   rules: [
     'Guess the hidden five-letter word in six tries.',
     'After each guess the tiles change colour to show how close you are.',
@@ -27,6 +31,7 @@ export default defineManifest({
     'Grey means the letter is not in the word at all.',
     'Type your guess and press Enter. Use the on-screen keys or your keyboard.',
   ],
+  ruleIcons: ['question', 'sparkle', 'check', 'swap', 'cross', 'keyboard'],
 
   config: {
     wordLength: 5,

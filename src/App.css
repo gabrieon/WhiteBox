@@ -578,7 +578,10 @@
   color: var(--muted);
   cursor: pointer;
   font-size: 12px;
-  font-weight: 400;
+  /* Chips are controls, and a control at weight 400 reads as a label. 600 is
+     enough to mark them as tappable without shouting over the card titles
+     beneath them. */
+  font-weight: 600;
 }
 
 .wb-chip:hover {
@@ -726,7 +729,10 @@
 .wb-card-title {
   min-width: 0;
   margin: 0;
-  font-size: 15px;
+  /* The card title is what a player actually scans for when deciding what to
+     open, so it carries the weight in the card. 15px read as an afterthought
+     next to the 24px section header above it — the jump was too steep. */
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.25;
@@ -762,7 +768,9 @@
   background: var(--accent);
   color: #ffffff;
   cursor: pointer;
-  font-size: 12px;
+  /* 13px so the label is comfortably readable on the one element that decides
+     whether someone opens the game. */
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
   transition: background-color 140ms ease, transform 170ms ease;
@@ -789,7 +797,11 @@
 .wb-card-meta {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  /* 11px in muted grey sits under the readable floor for anything longer than a
+     label, and this line carries the genre/mode/recency triple. 12px is the
+     smallest size that stays comfortable on a phone without looking like a
+     footnote. */
+  font-size: 12px;
   line-height: 1.4;
   letter-spacing: 0.02em;
 }
@@ -1641,17 +1653,40 @@
   background: #2b2b2b;
 }
 
-/* --- rules ---------------------------------------------------------------- */
+/* --- rules ----------------------------------------------------------------
+   The player arrives here eager to play and uncertain how to. That combination
+   decides the layout: it has to be scannable in a few seconds (so discrete
+   rows, not prose), it has to feel like the rules are the content (so they are
+   the second-largest thing on screen, after the heading), and it has to have an
+   unmistakable way out (so the primary action is a filled button, not 11px
+   grey text telling you to click).
+
+   The rules are LEFT-aligned inside a centred column. Centred body copy is the
+   wrong choice here: a ragged left edge means the eye has no stable column to
+   return to, so it re-finds the start of every line. The heading stays centred
+   because it is one line. */
 
 .wb-play-rules {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
+  gap: 26px;
   min-height: 100%;
-  padding: 40px 24px;
+  padding: clamp(28px, 6vw, 56px) 20px 40px;
   cursor: pointer;
+}
+
+.wb-play-rules-head {
+  text-align: center;
+}
+
+/* A count and a promise. "5 steps, then you're in" tells the player the screen
+   is finite and worth reading, which is most of what stops them swiping past. */
+.wb-play-rules-sub {
+  margin: 10px 0 0;
+  color: #9a9a9a;
+  font-size: 13px;
+  letter-spacing: 0.02em;
 }
 
 .wb-play-rules-list {
@@ -1659,72 +1694,162 @@
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  max-width: 46ch;
+  max-width: 34rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: rule;
 }
 
-/* The rule number is inline rather than absolutely positioned in a left gutter.
-   A gutter would need asymmetric padding to make room for it, and that offset
-   is exactly what stops the text sitting truly centred. */
-.wb-play-rules-list li {
+.wb-play-rule {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
-  gap: 12px;
-  color: #d4d4d4;
-  font-size: 13px;
-  line-height: 1.6;
-  text-align: center;
-  counter-increment: rule;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid #ffffff1f;
+  border-radius: 14px;
+  background: #141414;
+  color: #f2f2f2;
+  /* The rules are the payload. Everything else on this screen is chrome. */
+  font-size: clamp(15px, 3.6vw, 17px);
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
 }
 
-.wb-play-rules-list li::before {
-  content: counter(rule);
+.wb-play-rule-text {
+  /* Centres the glyph column against the text block rather than the row box. */
+  padding-top: 1px;
+}
+
+/* The glyph carries the meaning, the badge carries the order. Overlapping them
+   in one tile keeps the row's left edge a single clean column, which is what
+   makes the list scannable. */
+.wb-play-rule-mark {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
-  margin-top: 1px;
-  border: 1px solid #ffffff2e;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: #232323;
+  color: #f2f2f2;
+}
+
+.wb-play-rule-n {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
   border-radius: 50%;
-  color: #9a9a9a;
+  background: #f2f2f2;
+  color: #000;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .wb-play-rules-foot {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  width: 100%;
+  max-width: 34rem;
   cursor: default;
+  /* Pinned to the bottom so the primary action is always reachable. A
+     six-rule list plus a full-width checkbox does not fit a landscape phone,
+     and an unscrollable-looking "Play" that has silently fallen below the fold
+     is the worst outcome on a screen whose job is getting someone playing.
+     The fade stops rules scrolling up underneath it. */
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding-top: 20px;
+  background: linear-gradient(to bottom, #0000 0%, #000 28%);
 }
 
+/* A full-width row rather than a 15px checkbox with 12px type beside it. This
+   is a persistent preference with a lasting consequence — never see these
+   steps again — so it gets a target a thumb can actually hit. */
 .wb-play-remember {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  color: #9a9a9a;
-  font-size: 12px;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ffffff1f;
+  border-radius: 14px;
+  background: #141414;
   cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.wb-play-remember:hover {
+  border-color: #ffffff3d;
+  background: #1a1a1a;
 }
 
 .wb-play-remember input {
-  width: 15px;
-  height: 15px;
-  accent-color: #f2f2f2;
-  cursor: pointer;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
+.wb-play-remember-box {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 2px solid #ffffff3d;
+  border-radius: 7px;
+  color: transparent;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.wb-play-remember input:checked ~ .wb-play-remember-box {
+  border-color: #f2f2f2;
+  background: #f2f2f2;
+  color: #000;
+}
+
+.wb-play-remember input:focus-visible ~ .wb-play-remember-box {
+  outline: 2px solid #f2f2f2;
+  outline-offset: 2px;
+}
+
+.wb-play-remember-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wb-play-remember-text strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wb-play-remember-text span {
+  color: #9a9a9a;
+  font-size: 12px;
+}
+
+/* Demoted on purpose. Now that a filled "Play" button carries the action, this
+   is a keyboard hint for the click-anywhere shortcut rather than the only way
+   forward — which is exactly what it was before, at 11px grey, competing with
+   nothing. */
 .wb-play-continue {
   margin: 0;
   color: #6f6f6f;
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 12px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 

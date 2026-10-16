@@ -96,6 +96,10 @@ function templateRules(game) {
   ];
 }
 
+// Positional with templateRules. A player-created quiz has no manifest of its
+// own, so this is the only place its rules can be given icons.
+const TEMPLATE_RULE_ICONS = ['question', 'target', 'refresh', 'eye'];
+
 // Turn a created game's database row into a manifest the play shell can render.
 //
 // A created game is not in the registry — it has no code and no manifest of its
@@ -123,6 +127,7 @@ function synthesizePlayManifest(game) {
     // about flags should not inherit the same splash art as one about spelling.
     type: game.type || runtime.type,
     rules: templateRules(game),
+    ruleIcons: TEMPLATE_RULE_ICONS,
     content: game.content || null,
     thumbUrl: game.thumbUrl || null,
   };

@@ -25,6 +25,7 @@ export default defineManifest({
     'Clear all eight pairs in as few moves as you can.',
     'The clock starts on your first tap.',
   ],
+  ruleIcons: ['hand', 'pair', 'trophy', 'clock'],
 
   config: {
     pairs: 8,

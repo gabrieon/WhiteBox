@@ -40,5 +40,10 @@ jobs:
       - name: Run artwork quota tests
         run: npm run test:artwork
 
+      # Rule icons are declared per game and nothing validates them at runtime —
+      # a typo falls back silently. Cheap to check on every push.
+      - name: Run rules icon tests
+        run: npm run test:rules
+
       - name: Build the site bundle
         run: npm run build

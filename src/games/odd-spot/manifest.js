@@ -26,6 +26,7 @@ export default defineManifest({
     'Clear all ten rounds with as few misses as possible.',
     'The clock starts on your first tap.',
   ],
+  ruleIcons: ['grid', 'hand', 'cross', 'trophy', 'clock'],
 
   config: {
     rounds: 10,
