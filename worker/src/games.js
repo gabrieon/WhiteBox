@@ -40,6 +40,7 @@ class ValidationError extends Error {}
 
 import { publicUrl } from './thumbStore.js';
 import { DEFAULT_REVIEW_STATUS, GAME_STATUSES, isGameStatus } from './moderation.js';
+import { TEMPLATES } from './templates.js';
 
 function cleanText(value, { max, field, required }) {
   if (value === undefined || value === null) {
@@ -96,12 +97,20 @@ export function parseCreateGame(body) {
   // blank card, which is better than rejecting the whole submission.
   const description = cleanText(body.description, { max: MAX_DESCRIPTION, field: 'description', required: true });
 
+  // Which runtime plays this row. Absent means today's behaviour: a catalogue
+  // entry with no engine, rendered with a "Soon" badge.
+  const template = body.template === undefined || body.template === null
+    ? 'entry'
+    : cleanEnum(body.template, TEMPLATES, 'template');
+
   return {
     title,
     description,
     categories: cleanCategories(body.categories),
     type: cleanEnum(body.type, ART_TYPES, 'type'),
     mode: cleanEnum(body.mode, MODES, 'mode'),
+    template,
+    content: body.content === undefined ? null : body.content,
   };
 }
 
@@ -114,10 +123,25 @@ function rowToGame(row, env) {
     // A row whose tags are unreadable should still render — fall back to none.
   }
 
+  // Content is player-authored JSON. A row whose payload no longer parses is
+  // treated as having none, so a bad edit degrades to an unplayable entry rather
+  // than throwing on the library read that every visitor triggers.
+  let content = null;
+  try {
+    if (row.content) content = JSON.parse(row.content);
+  } catch {
+    content = null;
+  }
+
   // The bucket is public, so the browser can load the image straight from
   // storage. Proxying through the Worker would only add a hop and spend
   // request quota transferring bytes Cloudflare could serve for free.
   const thumbKeyValue = row.thumb_key || null;
+
+  // A created game is playable when it names a template that carries content.
+  // Previously this was hardcoded false, which is what put a permanent "Soon"
+  // badge on every player game.
+  const playable = row.template === 'quiz' && Boolean(content && content.questions);
 
   return {
     id: row.id,
@@ -126,6 +150,8 @@ function rowToGame(row, env) {
     categories,
     type: row.type,
     mode: row.mode,
+    template: isTemplate(row.template) ? row.template : 'entry',
+    content,
     creatorId: row.creator_id,
     creatorName: row.creator_name || null,
     createdAt: row.created_at,
@@ -137,10 +163,9 @@ function rowToGame(row, env) {
     // artwork. Null means "use GameArt", which is the default.
     thumbKey: thumbKeyValue,
     thumbUrl: thumbKeyValue ? publicUrl(env, thumbKeyValue) : null,
-    // A created game has metadata but no engine attached yet. Marking it
-    // unplayable is what puts the "Soon" badge on the card, so the library
-    // never implies you can launch something that has no code.
-    playable: false,
+    // Replayed by the template runtime. Kept honest: a placeholder entry is
+    // still unplayable, so the library never implies otherwise.
+    playable,
     origin: 'user',
   };
 }
@@ -206,8 +231,8 @@ export async function createGame(env, draft, creatorId, creatorName) {
   const createdAt = Date.now();
 
   await env.GAMES.prepare(
-    `INSERT INTO games (id, title, description, categories, type, mode, creator_id, creator_name, created_at, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO games (id, title, description, categories, type, mode, creator_id, creator_name, created_at, status, template, content)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(
     id,
     draft.title,
@@ -219,6 +244,8 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creatorName || null,
     createdAt,
     DEFAULT_REVIEW_STATUS,
+    draft.template,
+    draft.content ? JSON.stringify(draft.content) : null,
   ).run();
 
   return rowToGame({
@@ -232,6 +259,8 @@ export async function createGame(env, draft, creatorId, creatorName) {
     creator_name: creatorName || null,
     created_at: createdAt,
     status: DEFAULT_REVIEW_STATUS,
+    template: draft.template,
+    content: draft.content ? JSON.stringify(draft.content) : null,
     thumb_key: null,
   }, env);
 }
@@ -260,7 +289,8 @@ export async function updateGame(env, id, draft, creatorId, { admin = false } = 
 
   await env.GAMES.prepare(
     `UPDATE games
-        SET title = ?, description = ?, categories = ?, type = ?, mode = ?, status = ?
+        SET title = ?, description = ?, categories = ?, type = ?, mode = ?,
+            status = ?, template = ?, content = ?
       WHERE id = ?`,
   ).bind(
     draft.title,
@@ -269,6 +299,8 @@ export async function updateGame(env, id, draft, creatorId, { admin = false } = 
     draft.type,
     draft.mode,
     nextStatus,
+    draft.template,
+    draft.content ? JSON.stringify(draft.content) : null,
     id,
   ).run();
 
@@ -372,3 +404,7 @@ export async function deleteGame(env, id, { admin = false } = {}) {
 }
 
 export { GAME_STATUSES };
+
+function isTemplate(value) {
+  return TEMPLATES.includes(value);
+}

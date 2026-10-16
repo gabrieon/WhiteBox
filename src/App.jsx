@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import './sitebar.css';
-import { findGame, isPlayable, listGames } from './games/registry.js';
+import { findGame, isPlayable, listGames, templateRuntime } from './games/registry.js';
 import GameCard from './components/GameCard.jsx';
 import SignIn from './components/SignIn.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
@@ -13,7 +13,12 @@ import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
-import { fetchCreatedGames, fetchBuiltinThumbs, BUILTIN_THUMBS_CHANGED } from './sdk/games/api.js';
+import {
+  fetchCreatedGames,
+  fetchMyGames,
+  fetchBuiltinThumbs,
+  BUILTIN_THUMBS_CHANGED,
+} from './sdk/games/api.js';
 import { matchesGameText } from './sdk/games/search.js';
 
 // --- play history ------------------------------------------------------------
@@ -75,6 +80,52 @@ function relativeTime(ts, now) {
   const weeks = Math.round(days / 7);
   if (weeks < 5) return `${weeks}w ago`;
   return `${Math.round(days / 30)}mo ago`;
+}
+
+// Rules are derived per game rather than baked into the template, because the
+// question count is the thing a player most needs to know before starting.
+function templateRules(game) {
+  const count = Array.isArray(game.content?.questions)
+    ? game.content.questions.length
+    : 0;
+  return [
+    `Answer all ${count} ${count === 1 ? 'question' : 'questions'}.`,
+    'Each question has four options and one correct answer.',
+    'Your options are shuffled each round, so read all four.',
+    'A review at the end shows every answer you missed.',
+  ];
+}
+
+// Turn a created game's database row into a manifest the play shell can render.
+//
+// A created game is not in the registry — it has no code and no manifest of its
+// own — so `findGame` cannot resolve it. What plays it is a template runtime: a
+// registered component that takes the row's questions as input. This function
+// is the join between the two.
+//
+// Returns null for a row whose template is unknown, which is what makes an
+// unplayable created game fall through to "Game not found" instead of opening a
+// blank screen.
+function synthesizePlayManifest(game) {
+  if (!game) return null;
+  const runtime = templateRuntime(game.template);
+  if (!runtime) return null;
+
+  return {
+    ...runtime,
+    // Identity comes from the row, never the template. The template is an
+    // engine, not an identity.
+    id: game.id,
+    title: game.title,
+    description: game.description,
+    categories: game.categories || [],
+    // Artwork type is the creator's choice, not the template's default — a quiz
+    // about flags should not inherit the same splash art as one about spelling.
+    type: game.type || runtime.type,
+    rules: templateRules(game),
+    content: game.content || null,
+    thumbUrl: game.thumbUrl || null,
+  };
 }
 
 // Row heading carries a count so each section reads as a real section rather
@@ -286,6 +337,45 @@ export default function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshCreated();
   }, [refreshCreated]);
+
+  // --- your own games, whatever their review state --------------------------
+  //
+  // `createdGames` is the public catalogue and therefore approved-only. That is
+  // right for the library, but it means a creator has no way to PLAY their own
+  // submission: the row they just made is not in any list the play route reads,
+  // so opening it lands on "Game not found".
+  //
+  // Publishing a quiz without being able to try it first is a dead end — a
+  // creator cannot tell whether their answer key is right until a stranger has
+  // already seen it. So the signed-in player's own rows are fetched separately
+  // and used ONLY to resolve a play route. They never enter `library`, because
+  // an unreviewed game in the catalogue is exactly what moderation is for.
+  //
+  // This is safe because `fetchMyGames` runs with the viewer's own token, so
+  // every row in it belongs to them. It is not a way to see anyone else's.
+  const [ownState, setOwnState] = useState({ userId: null, games: [] });
+
+  // Keyed to the account it was fetched for, rather than cleared on sign-out.
+  // Clearing means a setState inside the effect, and — worse — it leaves a
+  // window where switching accounts still renders the previous user's games:
+  // the old list is still in state, and the new fetch has not landed yet. A
+  // `userId` stamp makes the list unresolvable the instant the profile changes,
+  // with no effect and no flash.
+  const ownGames = useMemo(
+    () => (ownState.userId && ownState.userId === profileId ? ownState.games : []),
+    [ownState, profileId],
+  );
+
+  useEffect(() => {
+    if (!isSignedIn || !profileId) return undefined;
+    let alive = true;
+    fetchMyGames()
+      .then((games) => { if (alive) setOwnState({ userId: profileId, games }); })
+      // A signed-in player who cannot list their own games still gets the
+      // approved catalogue; this is additive and not worth surfacing.
+      .catch(() => { if (alive) setOwnState({ userId: profileId, games: [] }); });
+    return () => { alive = false; };
+  }, [isSignedIn, profileId]);
 
   // The registry holds built-ins; the database holds player creations. Merging
   // them here means every downstream filter, sort and search sees one list.
@@ -507,7 +597,29 @@ export default function App() {
 
   const exitGame = useCallback(() => goToHash('#/'), []);
 
-  const activeGame = route.name === 'play' ? findGame(route.id) : null;
+  // Resolve a play route against three sources, in order: the registry for
+  // built-ins, the creator's own rows, then the public catalogue. Order matters
+  // — a built-in id always wins, so a created row can never shadow a shipped
+  // game, and the creator's copy wins over the public one so an edit is visible
+  // to them immediately instead of after the next public fetch.
+  const activeGame = useMemo(() => {
+    if (route.name !== 'play') return null;
+    const builtIn = findGame(route.id);
+    if (builtIn) return builtIn;
+    const own = ownGames.find((g) => g.id === route.id);
+    if (own) return synthesizePlayManifest(own);
+    return synthesizePlayManifest(createdGames.find((g) => g.id === route.id) || null);
+  }, [route.name, route.id, createdGames, ownGames]);
+
+  // A created game that is not approved is playable only by the person who made
+  // it, and only because their copy came from `ownGames` — which is fetched with
+  // their own token, so every row in it is theirs. Anything resolving through
+  // the public `createdGames` list is already approved by construction.
+  //
+  // That is why there is no status check here: the ordering above, not a second
+  // guard on this line, is what keeps an unreviewed game private. A second
+  // check would read as if it were doing the work, and it is not.
+  const activeGameVisible = Boolean(activeGame);
 
   return (
     <div className="wb-shell">
@@ -515,14 +627,15 @@ export default function App() {
         {/* A game covers the whole viewport, so the library unmounts rather
             than sitting underneath it. */}
         {route.name === 'play' && (
-          activeGame
+          activeGameVisible
             ? <PlayShell manifest={activeGame} onExit={exitGame} />
             : (
               <div className="wb-play-error">
                 <h2>Game not found</h2>
                 <p>
-                  There is no game called &ldquo;{route.id}&rdquo; any more. It may
-                  have been removed since this link was made.
+                  There is no game called &ldquo;{route.id}&rdquo; you can open. It
+                  may have been removed, or it may still be waiting for review
+                  &mdash; player-made games are only playable once they are approved.
                 </p>
                 <button type="button" className="wb-play-quiet" onClick={exitGame}>
                   Back to games
@@ -590,6 +703,7 @@ export default function App() {
           <CreateGame
             onBack={() => navigate('library')}
             onCreated={refreshCreated}
+            onPlay={(game) => navigate('play', game.id)}
             onDeleted={(game) => {
               setCreatedGames((prev) => prev.filter((g) => g.id !== game.id));
             }}

@@ -16,6 +16,7 @@ import { normalizeManifest, validateManifest } from '../sdk/manifest.js';
 import wordLock from './word-lock/manifest.js';
 import pairVault from './memory-match/manifest.js';
 import oddSpot from './odd-spot/manifest.js';
+import playerQuiz from './player-quiz/manifest.js';
 
 const registry = new Map();
 
@@ -55,6 +56,47 @@ oddSpot.loader = () => import('./odd-spot/OddSpot.jsx');
 const builtIns = [wordLock, pairVault, oddSpot];
 
 builtIns.forEach(registerGame);
+
+// --- template runtimes ---------------------------------------------------
+//
+// A runtime for a player-created game. It is NOT a game in the catalogue: it has
+// no identity, no artwork, no rules of its own, and must never appear as a card.
+// What it is is the component that knows how to play one particular template,
+// reached when a created row is opened.
+//
+// So it is deliberately NOT registered. Registering would put it in
+// `listGames()`, `listCategories()`, `listGames().map(g => g.id)` for the library
+// view, and `builtinIds()` — producing a "Quiz — coming soon" card that a player
+// can never start. It is validated once here instead, so a malformed runtime
+// still fails loudly in dev rather than at the moment someone opens their quiz.
+const { valid: quizRuntimeValid, errors: quizRuntimeErrors } =
+  validateManifest(playerQuiz);
+if (!quizRuntimeValid) {
+  console.error('[wb-registry] invalid player-quiz runtime:', quizRuntimeErrors);
+  if (import.meta.env?.DEV) {
+    throw new Error(`Invalid player-quiz runtime: ${quizRuntimeErrors.join('; ')}`);
+  }
+}
+
+/**
+ * Template runtimes, keyed by the `template` value stored on a created game.
+ *
+ * The key is the template name from the database, NOT the manifest id. They are
+ * kept the same today, but conflating them would mean renaming the runtime to
+ * rename a template, which would silently orphan every game already created with
+ * it.
+ */
+const templateRuntimes = new Map([
+  ['quiz', playerQuiz],
+]);
+
+/**
+ * Resolve the runtime for a created game's template.
+ * @returns the template manifest, or null when the template is unknown.
+ */
+export function templateRuntime(template) {
+  return templateRuntimes.get(template) || null;
+}
 
 export function getGame(id) {
   return registry.get(id) || null;

@@ -16,6 +16,14 @@ import { prepareThumbnail, revokePreview } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
 import ModerationQueue from './ModerationQueue.jsx';
 import BuiltinArtwork from './BuiltinArtwork.jsx';
+import QuizBuilder from './QuizBuilder.jsx';
+import CreatorAccess from './CreatorAccess.jsx';
+import { quizProblems, toPayload } from '../sdk/games/quiz.js';
+
+const TEMPLATES = [
+  { id: 'quiz', label: 'Quiz', hint: 'Multiple choice. Plays instantly, no typing.' },
+  { id: 'entry', label: 'Listing only', hint: 'A catalogue entry with a "Soon" badge. No playable game.' },
+];
 
 // The Create screen.
 //
@@ -109,6 +117,23 @@ const ERRORS = {
   status_invalid: 'That review list is not available.',
   decision_invalid: 'Choose Approve or Reject.',
   rate_limited: 'Too many requests. Wait a minute and try again.',
+  not_a_creator: 'Your account cannot create games yet. An admin has to grant access first.',
+  template_invalid: 'That game template is not available.',
+  questions_invalid: 'Add your questions as a list.',
+  questions_min_2: 'A quiz needs at least 2 questions.',
+  questions_max_30: 'A quiz can hold at most 30 questions.',
+  questions_duplicate: 'Two questions have the same wording. Change one of them.',
+  question_invalid: 'One question is malformed.',
+  options_count_invalid: 'Every question needs exactly 4 options.',
+  options_duplicate: 'Two options on one question are identical.',
+  answer_invalid: 'Mark which option is correct on every question.',
+  prompt_required: 'Every question needs a prompt.',
+  prompt_too_long: 'A question prompt must be under 300 characters.',
+  prompt_invalid: 'A question prompt is malformed.',
+  option_required: 'Every option needs text.',
+  option_too_long: 'An option must be under 120 characters.',
+  option_invalid: 'An option is malformed.',
+  content_not_allowed: 'This template does not take questions.',
   image_not_an_image: 'That file is not an image the browser can read.',
   image_too_large: 'That image is too large. Try a smaller one.',
   image_empty: 'That file was empty.',
@@ -125,14 +150,26 @@ function describeError(err) {
 // while nothing is loaded.
 const NO_GAMES = [];
 
-export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) {
+export default function CreateGame({
+  onCreated, onDeleted, onUpdated, onBack, onPlay,
+}) {
   const { isSignedIn, profile } = useAuth();
+
+  // Create access is a grant, not a property of having an account. Read once
+  // per session so the form can show a gate instead of a form whose submit
+  // would fail with `not_a_creator`.
+  const [isCreator, setIsCreator] = useState(null); // null = not yet known
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tagsRaw, setTagsRaw] = useState('');
   const [type, setType] = useState('puzzle');
   const [mode, setMode] = useState('Solo');
+
+  // Template + its content. `entry` is the placeholder that still exists for
+  // anyone who wants a catalogue listing rather than a playable game.
+  const [template, setTemplate] = useState('quiz');
+  const [questions, setQuestions] = useState([]);
 
   // The game currently open for editing, or null when publishing a new one.
   // Editing reuses this same form rather than living on a second screen: the
@@ -188,10 +225,13 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       .then((me) => {
         if (!alive) return;
         setIsAdmin(Boolean(me?.isAdmin));
+        setIsCreator(Boolean(me?.isCreator));
       })
       .catch(() => {
         if (!alive) return;
         setIsAdmin(false);
+        // Unknown is not "allowed": a failed check must not unlock the form.
+        setIsCreator(false);
       });
     return () => { alive = false; };
   }, [isSignedIn, profileId]);
@@ -268,6 +308,13 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     if (d.length > MAX_DESCRIPTION) return ERRORS.description_too_long;
     if (tags.length > MAX_TAGS) return ERRORS.too_many_categories;
     if (tags.some((tag) => tag.length > MAX_TAG_LEN)) return ERRORS.category_too_long;
+
+    // A quiz is only playable if it carries questions, so an empty one is
+    // caught here rather than as a silent "Soon" badge after a round-trip.
+    if (template === 'quiz') {
+      const problems = quizProblems(questions);
+      if (problems.length > 0) return problems[0];
+    }
     return '';
   }
 
@@ -320,7 +367,12 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
         description: cleanText(description),
         categories: tags,
         type,
-        mode,
+        // A quiz has no multiplayer runtime yet, so a 1v1 label on one would
+        // promise something that cannot happen. It is forced to Solo rather
+        // than silently offering a mode the game cannot honour.
+        mode: template === 'quiz' ? 'Solo' : mode,
+        template,
+        content: template === 'quiz' ? toPayload(questions) : null,
       };
 
       const isEdit = Boolean(editing);
@@ -350,6 +402,9 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       setTitle('');
       setDescription('');
       setTagsRaw('');
+      // Questions are cleared with the rest of the form. Keeping them would mean
+      // the next quiz silently starts as a copy of the one just submitted.
+      setQuestions([]);
       if (published.status === 'pending') {
         setNotice(
           isEdit
@@ -368,9 +423,6 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     }
   }
 
-  // Prefill the form from an existing game. The photo is deliberately NOT put
-  // into `pendingThumb` — that holds an unsaved local file, and copying an
-  // already-uploaded URL into it would re-upload the image on save.
   function startEdit(game) {
     setEditing(game);
     setTitle(game.title);
@@ -378,6 +430,11 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     setTagsRaw((game.categories || []).join(', '));
     setType(game.type);
     setMode(game.mode);
+    setTemplate(game.template || 'entry');
+    // Editing a quiz restores its questions, so a correction is a small edit
+    // rather than retyping the whole thing. Rows created before templates carry
+    // no content, which lands here as an empty editor.
+    setQuestions(Array.isArray(game.content?.questions) ? game.content.questions : []);
     setError('');
     clearPendingImage();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -388,6 +445,7 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     setTitle('');
     setDescription('');
     setTagsRaw('');
+    setQuestions([]);
     setError('');
     clearPendingImage();
   }
@@ -463,6 +521,47 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
     );
   }
 
+  // Signed in, but create access has not been granted. Rendering the form would
+  // give someone a fully-built editor whose submit fails with `not_a_creator`,
+  // which reads as a broken site rather than a closed door.
+  //
+  // `null` means the /v1/me check has not answered yet; showing the gate during
+  // that window would flash "no access" at someone who does have it.
+  if (isCreator === null) {
+    return (
+      <div className="wb-create">
+        <button type="button" className="wb-create-back" onClick={onBack}>
+          &larr; Back to games
+        </button>
+        <p className="wb-row-empty">Checking your access…</p>
+      </div>
+    );
+  }
+
+  if (!isCreator) {
+    return (
+      <div className="wb-create">
+        <button type="button" className="wb-create-back" onClick={onBack}>
+          &larr; Back to games
+        </button>
+        <div className="wb-create-gate">
+          <h2>Creating is invite-only for now</h2>
+          <p>
+            You are signed in, but your account has not been given permission to
+            publish games yet. Every game on WhiteBox is reviewed by a person
+            before it goes live, so new creators are added deliberately rather than
+            opened to everyone.
+          </p>
+          <p className="wb-create-note">
+            Already have an invite? Ask the site owner to add your account, then
+            reload this page. Your account id is{' '}
+            <code>{profile?.id || 'unavailable'}</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="wb-create">
       <button type="button" className="wb-create-back" onClick={onBack}>
@@ -480,6 +579,22 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
 
           {error && <div className="wb-modal-error" role="alert">{error}</div>}
           {notice && <p className="wb-mine-notice" role="status">{notice}</p>}
+
+          <label className="wb-field">
+            <span className="wb-field-label">Type of game</span>
+            <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+              {TEMPLATES.map((choice) => (
+                <option key={choice.id} value={choice.id}>{choice.label}</option>
+              ))}
+            </select>
+            <span className="wb-field-hint">
+              {TEMPLATES.find((t) => t.id === template)?.hint}
+            </span>
+          </label>
+
+          {template === 'quiz' && (
+            <QuizBuilder questions={questions} onChange={setQuestions} />
+          )}
 
           <label className="wb-field">
             <span className="wb-field-label">Name</span>
@@ -687,6 +802,19 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
                   </span>
                 </div>
                 <div className="wb-mine-actions">
+                  {/* Playtest is offered for anything the runtime can actually
+                      play, including a game still under review — checking your
+                      own answer key is the whole point of writing a quiz, and
+                      nobody else can see it until it is approved. */}
+                  {game.playable && onPlay && (
+                    <button
+                      type="button"
+                      className="wb-mine-action"
+                      onClick={() => onPlay(game)}
+                    >
+                      Play
+                    </button>
+                  )}
                   {game.thumbKey && (
                     <button
                       type="button"
@@ -720,6 +848,7 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
       </section>
 
       {isAdmin && (
+        <>
         <ModerationQueue
           games={queue}
           status={reviewStatus}
@@ -730,6 +859,8 @@ export default function CreateGame({ onCreated, onDeleted, onUpdated, onBack }) 
           loading={queueLoading}
           error={queueError}
         />
+        <CreatorAccess />
+        </>
       )}
 
       <BuiltinArtwork />

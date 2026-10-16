@@ -84,21 +84,22 @@ function makeD1() {
             if (sql.startsWith('INSERT INTO games')) {
               const [
                 id, title, description, categories, type, mode,
-                creatorId, creatorName, createdAt, status,
+                creatorId, creatorName, createdAt, status, template, content,
               ] = args;
               rows.set(id, {
                 id, title, description, categories, type, mode,
                 creator_id: creatorId, creator_name: creatorName,
-                created_at: createdAt, status, thumb_key: null,
+                created_at: createdAt, status, template, content,
+                thumb_key: null,
               });
               return { meta: { changes: 1 } };
             }
             if (sql.includes('SET title = ?') && sql.includes('status = ?')) {
-              const [title, description, categories, type, mode, status, id] = args;
+              const [title, description, categories, type, mode, status, template, content, id] = args;
               const row = rows.get(id);
               if (!row) return { meta: { changes: 0 } };
               rows.set(id, {
-                ...row, title, description, categories, type, mode, status,
+                ...row, title, description, categories, type, mode, status, template, content,
               });
               return { meta: { changes: 1 } };
             }

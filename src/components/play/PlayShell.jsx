@@ -188,5 +188,9 @@ function GameRenderer({ manifest, onExit }) {
     return <div className="wb-play-loading">Loading…</div>;
   }
 
-  return <Component onExit={onExit} />;
+  // The manifest is handed to the component as a prop. Built-in games import
+  // their own manifest, so they ignore it — but a template runtime has no
+  // manifest of its own and reads everything else (title, questions) from here,
+  // because that is the only place the row being played is known.
+  return <Component manifest={manifest} onExit={onExit} />;
 }

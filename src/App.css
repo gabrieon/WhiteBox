@@ -376,10 +376,10 @@
 .wb-email-form input {
   min-height: 40px;
   padding: 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-edge);
   border-radius: 10px;
-  background: transparent;
-  color: inherit;
+  background: var(--control-fill);
+  color: var(--control-ink);
   font-size: 13px;
 }
 
@@ -524,13 +524,17 @@
 .wb-sync-retry {
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-edge);
   border-radius: 999px;
-  background: transparent;
-  color: inherit;
+  background: var(--control-fill);
+  color: var(--control-ink);
   cursor: pointer;
   font-size: 12px;
-  font-weight: 700;
+  transition: background-color 140ms ease;
+}
+
+.wb-sync-retry:hover {
+  background: var(--control-fill-hover);
 }
 
 .wb-sort {
@@ -1118,10 +1122,10 @@
   flex: none;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-edge);
   border-radius: 999px;
-  background: transparent;
-  color: inherit;
+  background: var(--control-fill);
+  color: var(--control-ink);
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
@@ -1166,8 +1170,8 @@
   padding: 0 16px;
   border: 1px dashed var(--line);
   border-radius: 10px;
-  background: transparent;
-  color: var(--ink);
+  background: var(--control-fill);
+  color: var(--control-ink);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1176,7 +1180,7 @@
 
 .wb-upload-pick:hover:not(:disabled) {
   border-color: var(--ink);
-  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  background: var(--control-fill-hover);
 }
 
 .wb-upload-pick:disabled {
@@ -1248,19 +1252,199 @@
   flex: none;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid transparent;
+  border: 1px solid var(--control-edge);
   border-radius: 999px;
-  background: transparent;
-  color: inherit;
+  background: var(--control-fill);
+  color: var(--control-ink);
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
+  transition: background-color 140ms ease;
+}
+
+.wb-mine-action:hover:not(:disabled) {
+  background: var(--control-fill-hover);
+}
+
+.wb-mine-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* --- Quiz question editor ------------------------------------------------
+   The builder is a list of self-contained cards rather than one long form,
+   because "question 7 of 30" is the unit a creator is actually thinking in.
+   Everything is a filled control for the same reason as the rest of the site:
+   a transparent button reads as disabled next to real ones. */
+
+.wb-quiz {
+  margin: 4px 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--fill);
+}
+
+.wb-quiz-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wb-quiz-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-quiz-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel, var(--fill));
+}
+
+.wb-quiz-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   opacity: 0.6;
 }
 
-.wb-mine-action:hover {
-  opacity: 1;
+.wb-quiz-move {
+  display: flex;
+  gap: 4px;
+}
+
+.wb-quiz-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--control-edge);
+  border-radius: 10px;
+  background: var(--control-fill);
+  color: var(--control-ink);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background-color 140ms ease;
+}
+
+.wb-quiz-icon:hover:not(:disabled) {
+  background: var(--control-fill-hover);
+}
+
+.wb-quiz-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.wb-quiz-item > input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--control-fill);
+  color: var(--control-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.wb-quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* The correct answer is marked by the row itself, not by the radio alone. A
+   creator scanning a 30-question form needs to see the answer key at a glance,
+   and a 12px radio dot does not carry that. */
+.wb-quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--control-edge);
+  border-radius: 10px;
+  background: var(--control-fill);
+  color: var(--control-ink);
+}
+
+.wb-quiz-option.is-correct {
+  border-color: #3f9142;
+  box-shadow: inset 0 0 0 1px #3f9142;
+}
+
+.wb-quiz-option input[type=text] {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.wb-quiz-option input[type=text]:focus {
   border-color: var(--line);
+}
+
+.wb-quiz-option input[type=radio] {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  accent-color: #3f9142;
+}
+
+.wb-quiz-warning {
+  margin: 0;
+  color: #c02626;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* --- Creator access ------------------------------------------------------- */
+
+.wb-creator-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.wb-creator-form .wb-field {
+  flex: 1 1 260px;
+  margin: 0;
+}
+
+.wb-creator-form .wb-mine-action {
+  flex: none;
+  margin-top: 22px;
+}
+
+@media (max-width: 560px) {
+  .wb-quiz-options {
+    grid-template-columns: 1fr;
+  }
 }
 
 .wb-chip-row {

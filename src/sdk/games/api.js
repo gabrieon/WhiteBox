@@ -11,6 +11,29 @@ export async function fetchCreatedGames({ limit = 60 } = {}) {
   return Array.isArray(data?.games) ? data.games : [];
 }
 
+/** Grant create access to an account. Admin only. */
+export async function grantCreator(userId, userName) {
+  const data = await apiFetch(`/v1/creators/${encodeURIComponent(userId)}`, {
+    method: 'POST',
+    body: JSON.stringify({ userId, userName }),
+  });
+  return Boolean(data?.ok);
+}
+
+/** Revoke create access. Admin only. */
+export async function revokeCreator(userId) {
+  const data = await apiFetch(`/v1/creators/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  });
+  return Boolean(data?.ok);
+}
+
+/** Every account currently allowed to create. Admin only. */
+export async function fetchCreators() {
+  const data = await apiFetch('/v1/creators');
+  return Array.isArray(data?.creators) ? data.creators : [];
+}
+
 /**
  * The signed-in player's own submissions in every moderation state. The
  * public catalogue intentionally hides pending and rejected entries, so this

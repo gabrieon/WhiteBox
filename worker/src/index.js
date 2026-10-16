@@ -38,6 +38,8 @@ import {
 import {
   checkWriteRate, parseReviewDecision, rateLimitedResponse,
 } from './moderation.js';
+import { isCreator, grantCreator, revokeCreator, listCreators, countGamesBy } from './creators.js';
+import { parseTemplateContent } from './templates.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
@@ -354,12 +356,27 @@ async function handleRequest(request, env) {
       const throttled = await throttleWrite(request, env, 'games:create', user.id, authCorsHeaders);
       if (throttled) return throttled;
 
+      // Creating is a grant, not a side effect of having an account. Checked
+      // before the body is even read so a non-creator learns nothing about what
+      // a valid submission looks like.
+      if (!(await isCreator(env, user.id))) {
+        return json({ error: 'not_a_creator' }, 403, authCorsHeaders);
+      }
+
       const body = await readJsonBody(request);
       let draft;
       try {
         draft = parseCreateGame(body);
       } catch (err) {
         return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+      }
+
+      // Content is player-authored and rendered in every visitor's browser, so
+      // it gets the same hostile-input treatment as the metadata.
+      try {
+        draft.content = parseTemplateContent(draft.template, draft.content);
+      } catch (err) {
+        return json({ error: err?.message || 'content_invalid' }, 400, authCorsHeaders);
       }
 
       try {
@@ -389,6 +406,11 @@ async function handleRequest(request, env) {
         draft = parseCreateGame(body);
       } catch (err) {
         return json({ error: err?.message || 'bad_request' }, 400, authCorsHeaders);
+      }
+      try {
+        draft.content = parseTemplateContent(draft.template, draft.content);
+      } catch (err) {
+        return json({ error: err?.message || 'content_invalid' }, 400, authCorsHeaders);
       }
 
       try {
@@ -553,10 +575,69 @@ async function handleRequest(request, env) {
       const user = await resolveUser(env, request);
       if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
       return json(
-        { id: user.id, name: user.name, isAdmin: isAdmin(env, user.id) },
+        {
+          id: user.id,
+          name: user.name,
+          isAdmin: isAdmin(env, user.id),
+          isCreator: await isCreator(env, user.id),
+        },
         200,
         authCorsHeaders,
       );
+    }
+
+    // GET /v1/creators -> { creators: [...] } (admin)
+    if (url.pathname === '/v1/creators' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      if (!isAdmin(env, user.id)) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+      const list = await listCreators(env);
+      return json({
+        creators: await Promise.all(list.map(async (entry) => ({
+          ...entry,
+          gameCount: await countGamesBy(env, entry.userId),
+        }))),
+      }, 200, authCorsHeaders);
+    }
+
+    // POST /v1/creators { userId, userName } — grant create access (admin)
+    const grantMatch = url.pathname.match(/^\/v1\/creators\/([A-Za-z0-9-]{1,64})$/);
+    if (grantMatch && request.method === 'POST') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      if (!isAdmin(env, user.id)) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:review', user.id, authCorsHeaders);
+      if (throttled) return throttled;
+
+      const body = await readJsonBody(request);
+      const targetId = typeof body?.userId === 'string' ? body.userId.trim() : '';
+      // Supabase ids are UUIDs. Rejecting anything else keeps a crafted body
+      // from granting access to an id that could never authenticate anyway.
+      if (!/^[0-9a-f-]{36}$/i.test(targetId)) {
+        return json({ error: 'user_id_invalid' }, 400, authCorsHeaders);
+      }
+      await grantCreator(env, targetId, body?.userName, user.id);
+      return json({ ok: true }, 200, authCorsHeaders);
+    }
+
+    // DELETE /v1/creators/:userId — revoke create access (admin)
+    if (grantMatch && request.method === 'DELETE') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      if (!isAdmin(env, user.id)) return json({ error: 'not_allowed' }, 403, authCorsHeaders);
+      const throttled = await throttleWrite(request, env, 'games:review', user.id, authCorsHeaders);
+      if (throttled) return throttled;
+      const removed = await revokeCreator(env, grantMatch[1]);
+      return json({ ok: removed }, 200, authCorsHeaders);
     }
 
     // GET /v1/builtin-thumbs -> { thumbs: { [gameId]: url } }

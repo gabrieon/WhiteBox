@@ -120,9 +120,12 @@ export default function BuiltinArtwork() {
   }
 
   // Nothing renders until the ownership check settles, so the panel never flashes
-  // into view for a signed-out visitor and then disappears. A signed-in
-  // non-admin still gets the explanatory message rather than a silent nothing.
-  if (builtins.length === 0 || !checked || (!isAdmin && !error)) return null;
+  // into view for a signed-out visitor and then disappears.
+  //
+  // The `isAdmin` test is the only condition that hides this: the "not in
+  // ADMIN_USER_IDS" message is set only when a signed-in account fails the check,
+  // so a non-admin who reaches this point has nothing to see and nothing to do.
+  if (builtins.length === 0 || !checked || !isAdmin) return null;
 
   return (
     <section className="wb-create-mine">
