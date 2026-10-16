@@ -47,9 +47,9 @@ export function requiredRatio(fontSizePx, bold = false) {
 // Extending this is the point: a new muted grey should be added here rather
 // than eyeballed.
 const ON_GAME_BLACK = [
-  { hex: '#f2f2f2', px: 17, bold: true, where: '.wb-play-rule (rules body)' },
-  { hex: '#f2f2f2', px: 15, bold: true, where: '.wb-play-remember strong' },
-  { hex: '#f2f2f2', px: 13, bold: true, where: '.pz-btn / game buttons' },
+  { hex: '#e8e8e8', px: 17, bold: true, where: '.wb-play-rule (rules body)' },
+  { hex: '#e8e8e8', px: 15, bold: true, where: '.wb-play-remember strong' },
+  { hex: '#e8e8e8', px: 13, bold: true, where: '.pz-btn / game buttons' },
   { hex: '#9a9a9a', px: 13, where: '.wb-play-rules-sub' },
   { hex: '#9a9a9a', px: 12, where: '.wb-play-remember-text span' },
   { hex: '#9a9a9a', px: 13, where: '.wb-play-tagline' },
@@ -60,12 +60,18 @@ const ON_GAME_BLACK = [
 ];
 
 const ON_SITE_PAGE = [
-  { hex: '#f2f2f2', px: 24, bold: true, where: '.wb-row-title' },
-  { hex: '#f2f2f2', px: 17, bold: true, where: '.wb-card-title' },
+  { hex: '#e8e8e8', px: 24, bold: true, where: '.wb-row-title' },
+  { hex: '#e8e8e8', px: 17, bold: true, where: '.wb-card-title' },
+  { hex: '#e8e8e8', px: 13, where: '--ink body' },
   { hex: '#8a8a8a', px: 12, where: '--muted' },
   { hex: '#7a7a7a', px: 12, where: '--dim' },
-  { hex: '#f2f2f2', px: 13, where: '--control-ink' },
+  { hex: '#e8e8e8', px: 13, where: '--control-ink' },
 ];
+
+// The single brightest neutral in the dark theme. Text, fills, borders and focus
+// rings all resolve to this one value, so the theme has exactly one answer to
+// "how bright is our foreground" rather than a set of near-identical whites.
+export const BRIGHT_NEUTRAL = '#e8e8e8';
 
 let passed = 0;
 async function test(name, fn) {
@@ -112,14 +118,54 @@ await test('clearing the site page implies clearing the game screens', () => {
   }
 });
 
+await test('body text clears AAA comfortably, not just AA', () => {
+  // The whole point of softening --ink: give up some of a very large surplus
+  // rather than approach the threshold. 7:1 is the AAA bar; this should sit well
+  // clear of it, and still far below the ~18:1 the old value had.
+  const ratio = contrast(BRIGHT_NEUTRAL, SITE_PAGE);
+  assert.ok(ratio >= 12, `--ink is only ${ratio.toFixed(2)}:1, expected comfortable headroom over AAA`);
+  assert.ok(ratio < 18, '--ink is bright enough to reintroduce the glare problem');
+});
+
+await test('the softened neutral is still a light colour, not grey', () => {
+  // Guard against a "fix" that quietly drags --ink down toward --muted.
+  assert.ok(
+    contrast(BRIGHT_NEUTRAL, SITE_PAGE) > contrast('#9a9a9a', SITE_PAGE) * 2,
+    '--ink must stay far brighter than the secondary text',
+  );
+});
+
 await test('#6f6f6f stays out — it fails on both surfaces', () => {
   // Kept as a named check because it is the value that was actually in the
-  // stylesheets, and it is not obvious from looking at it.
+  // stylesheets, and nothing about looking at it says it is wrong.
   const bad = '#6f6f6f';
   assert.ok(contrast(bad, SITE_PAGE) < 4.5, 'fails on the site page');
   assert.ok(contrast(bad, GAME_BLACK) < 4.5, 'fails on the game screens');
   // #7a7a7a is the replacement, and it clears on the stricter of the two.
   assert.ok(contrast('#7a7a7a', SITE_PAGE) >= 4.5);
+});
+
+await test('no stylesheet reintroduces the old harsh white as a value', () => {
+  // Scans for the literal as a DECLARATION, ignoring comments. The old
+  // #f2f2f2 still appears in prose explaining why it was replaced, and that
+  // must not trip this.
+  const files = [
+    '../src/index.css',
+    '../src/App.css',
+    '../src/sitebar.css',
+    '../src/games/word-lock/WordLock.css',
+    '../src/games/memory-match/PairVault.css',
+    '../src/games/odd-spot/OddSpot.css',
+    '../src/games/player-quiz/PlayerQuiz.css',
+  ];
+  for (const file of files) {
+    const stripped = readFileSync(new URL(file, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.ok(
+      !stripped.includes('#f2f2f2'),
+      `${file} still uses #f2f2f2 as a value`,
+    );
+  }
 });
 
 await test('the two dark surfaces are deliberately different', () => {

@@ -62,7 +62,11 @@
   color-scheme: dark;
 
   --paper: #0b0b0b;
-  --ink: #f2f2f2;
+  /* #e8e8e8, not #f2f2f2. The old value measured 18.3:1 against this page —
+     nearly maxed, and near-white small text is the actual source of glare over
+     a long reading session. 16.1:1 is still over three times the AAA
+     requirement of 7:1, so nothing legible is given up for a softer screen. */
+  --ink: #e8e8e8;
   --muted: #8a8a8a;
   /* Clears 4.5:1 on the dark page. */
   --dim: #7a7a7a;
@@ -71,7 +75,10 @@
   /* Dark grey fill — clearly grey against the #0b0b0b page, and still above
      4.5:1 under --muted text. */
   --fill: #1c1c1c;
-  --red: #f2f2f2;
+  /* The danger slot is a light neutral in dark mode rather than red: a saturated
+     red on black vibrates badly at small sizes. Kept on the same --ink step so
+     there is exactly one bright neutral in the theme. */
+  --red: #e8e8e8;
   --red-hover: #ffffff;
   --red-pressed: #d8d8d8;
   --on-red: #0b0b0b;
@@ -84,7 +91,7 @@
   --control-fill: #1c1c1c;
   --control-fill-hover: #2b2b2b;
   --control-edge: #ffffff14;
-  --control-ink: #f2f2f2;
+  --control-ink: #e8e8e8;
 
   /* Slightly lighter in dark so the capsule still reads as a control, not a
      dark patch, while keeping white text legible. */

@@ -689,7 +689,7 @@
 }
 
 [data-theme='dark'] .wb-game-art {
-  --ink: #f2f2f2;
+  --ink: #e8e8e8;
   --white: #1c1c1c;
   --paper: #151515;
   --gray: #8a8a8a;
@@ -1561,7 +1561,7 @@
   z-index: 200;
   overflow-y: auto;
   background: #000000;
-  color: #f2f2f2;
+  color: #e8e8e8;
   animation: wb-play-in 180ms ease;
 }
 
@@ -1615,7 +1615,7 @@
   padding: 13px 46px;
   border: 0;
   border-radius: 999px;
-  background: #f2f2f2;
+  background: #e8e8e8;
   color: #000000;
   cursor: pointer;
   font: inherit;
@@ -1638,7 +1638,7 @@
   border: 1px solid #ffffff26;
   border-radius: 999px;
   background: #1c1c1c;
-  color: #f2f2f2;
+  color: #e8e8e8;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -1708,7 +1708,7 @@
   border: 1px solid #ffffff1f;
   border-radius: 14px;
   background: #141414;
-  color: #f2f2f2;
+  color: #e8e8e8;
   /* The rules are the payload. Everything else on this screen is chrome. */
   font-size: clamp(15px, 3.6vw, 17px);
   font-weight: 600;
@@ -1733,7 +1733,7 @@
   height: 42px;
   border-radius: 11px;
   background: #232323;
-  color: #f2f2f2;
+  color: #e8e8e8;
 }
 
 .wb-play-rule-n {
@@ -1745,7 +1745,7 @@
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: #f2f2f2;
+  background: #e8e8e8;
   color: #000;
   font-size: 10px;
   font-weight: 800;
@@ -1814,13 +1814,13 @@
 }
 
 .wb-play-remember input:checked ~ .wb-play-remember-box {
-  border-color: #f2f2f2;
-  background: #f2f2f2;
+  border-color: #e8e8e8;
+  background: #e8e8e8;
   color: #000;
 }
 
 .wb-play-remember input:focus-visible ~ .wb-play-remember-box {
-  outline: 2px solid #f2f2f2;
+  outline: 2px solid #e8e8e8;
   outline-offset: 2px;
 }
 
