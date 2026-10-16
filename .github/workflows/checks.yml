@@ -29,5 +29,11 @@ jobs:
       - name: Run WORDLOCK tests
         run: npm run test:wordlock
 
+      # Quizzes are player-authored data rendered in every visitor's browser,
+      # so their validation and the option-shuffle answer remap are worth
+      # checking on every push rather than only when someone remembers.
+      - name: Run create/quiz tests
+        run: npm run test:create
+
       - name: Build the site bundle
         run: npm run build
