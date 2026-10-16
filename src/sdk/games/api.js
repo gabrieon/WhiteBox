@@ -75,6 +75,18 @@ export async function fetchMe() {
   return apiFetch('/v1/me');
 }
 
+/**
+ * Fired whenever a built-in artwork override is written or cleared.
+ *
+ * The library renders artwork from its own copy of the override map, fetched
+ * once at mount. The artwork editor updated that map inside its own component,
+ * so without this signal the library kept drawing the old thumbnail until a full
+ * page reload — the upload succeeded and nothing on screen changed.
+ *
+ * `detail` is the complete new map, so the library never has to refetch.
+ */
+export const BUILTIN_THUMBS_CHANGED = 'whitebox:builtin-thumbs-changed';
+
 export async function fetchBuiltinThumbs() {
   const data = await apiFetch('/v1/builtin-thumbs');
   return (data && typeof data.thumbs === 'object' && data.thumbs) || {};

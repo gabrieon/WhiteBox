@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { listGames } from '../games/registry.js';
 import {
   fetchMe, fetchBuiltinThumbs, uploadBuiltinThumb, deleteBuiltinThumb,
+  BUILTIN_THUMBS_CHANGED,
 } from '../sdk/games/api.js';
 import { prepareThumbnail } from '../sdk/games/imagePrep.js';
 import GameArt from './GameArt.jsx';
@@ -31,6 +32,14 @@ export default function BuiltinArtwork() {
   // `change` event carries no row context, and a single shared input would make
   // "which game am I replacing?" implicit.
   const inputs = useRef(new Map());
+
+  // The library draws artwork from its own copy of this map, so a local update
+  // is invisible to it. Publishing the next map is what makes the new thumbnail
+  // appear on the home screen immediately instead of after a reload.
+  const publish = useCallback((next) => {
+    setOverrides(next);
+    window.dispatchEvent(new CustomEvent(BUILTIN_THUMBS_CHANGED, { detail: next }));
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -79,9 +88,10 @@ export default function BuiltinArtwork() {
     try {
       const prepared = await prepareThumbnail(file);
       await uploadBuiltinThumb(game.id, prepared.blob);
-      // The local object URL is the same bytes the server now holds, so show it
-      // straight away rather than waiting on a refetch.
-      setOverrides((prev) => ({ ...prev, [game.id]: prepared.preview }));
+      // The object key never changes, so the URL does either — and the browser
+      // would happily serve the previous image from its HTTP cache forever. The
+      // `v` stamp is appended for exactly that reason: same bytes at a new URL.
+      publish((prev) => ({ ...prev, [game.id]: `${prepared.preview}?v=${Date.now()}` }));
       setNotice(`Updated ${game.title}.`);
     } catch (err) {
       setError(err?.message || 'Upload failed.');
@@ -96,7 +106,7 @@ export default function BuiltinArtwork() {
     setBusyId(game.id);
     try {
       await deleteBuiltinThumb(game.id);
-      setOverrides((prev) => {
+      publish((prev) => {
         const next = { ...prev };
         delete next[game.id];
         return next;

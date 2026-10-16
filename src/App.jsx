@@ -13,7 +13,7 @@ import PlayShell from './components/play/PlayShell.jsx';
 import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
-import { fetchCreatedGames, fetchBuiltinThumbs } from './sdk/games/api.js';
+import { fetchCreatedGames, fetchBuiltinThumbs, BUILTIN_THUMBS_CHANGED } from './sdk/games/api.js';
 import { matchesGameText } from './sdk/games/search.js';
 
 // --- play history ------------------------------------------------------------
@@ -277,7 +277,18 @@ export default function App() {
     fetchBuiltinThumbs()
       .then((map) => { if (alive) setBuiltinThumbs(map); })
       .catch(() => {});
-    return () => { alive = false; };
+
+    // The artwork editor announces its result. Without this the library kept the
+    // map it fetched at mount, so replacing a thumbnail appeared to do nothing
+    // until the page was reloaded. The event carries the finished map, so no
+    // refetch is needed.
+    function onChanged(event) {
+      if (!alive) return;
+      const detail = event.detail;
+      if (detail && typeof detail === 'object') setBuiltinThumbs(detail);
+    }
+    window.addEventListener(BUILTIN_THUMBS_CHANGED, onChanged);
+    return () => { alive = false; window.removeEventListener(BUILTIN_THUMBS_CHANGED, onChanged); };
   }, []);
 
   const library = useMemo(() => {
