@@ -45,5 +45,10 @@ jobs:
       - name: Run rules icon tests
         run: npm run test:rules
 
+      # Contrast regressions are invisible in review — a grey nudged two hex
+      # darker looks identical and quietly fails AA.
+      - name: Run contrast audit
+        run: npm run test:contrast
+
       - name: Build the site bundle
         run: npm run build

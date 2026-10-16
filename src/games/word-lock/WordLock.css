@@ -350,7 +350,7 @@ i.wl-swatch.is-absent,
 
 .wl-clue-tag {
   flex: none;
-  color: #6f6f6f;
+  color: #7a7a7a;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -366,7 +366,7 @@ i.wl-swatch.is-absent,
 .wl-credit {
   display: block;
   margin-top: 6px;
-  color: #6f6f6f;
+  color: #7a7a7a;
   font-size: 9px;
   letter-spacing: 0.04em;
 }
