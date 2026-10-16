@@ -40,6 +40,9 @@ import {
 } from './moderation.js';
 import { isCreator, grantCreator, revokeCreator, listCreators, countGamesBy } from './creators.js';
 import { parseTemplateContent } from './templates.js';
+import {
+  generateImage, generationUsage, parsePrompt, quotaStatus, reserveGeneration,
+} from './artwork.js';
 
 /**
  * Resolve the caller's identity from whichever auth mode is live: a Supabase
@@ -153,6 +156,15 @@ async function readJsonBody(request) {
   } catch {
     return null;
   }
+}
+
+// Seconds until the next Pacific midnight, so a throttled player is told when
+// the allowance actually comes back rather than being handed a flat "try later".
+function secondsUntilNextPacificDay(now = Date.now()) {
+  const PACIFIC_UTC_OFFSET_MS = -8 * 60 * 60 * 1000;
+  const dayStart = Math.floor((now + PACIFIC_UTC_OFFSET_MS) / 86_400_000) * 86_400_000
+    - PACIFIC_UTC_OFFSET_MS;
+  return Math.max(1, Math.ceil((dayStart + 86_400_000 - now) / 1000));
 }
 
 // Shared abuse ceiling for state-changing routes. Checked after identity where
@@ -530,6 +542,104 @@ async function handleRequest(request, env) {
       await setThumb(env, id, key, user.id, { admin });
 
       return json({ ok: true, key, url: stored.url, bytes: upload.bytes.byteLength }, 200, authCorsHeaders);
+    }
+
+    // GET /v1/artwork/quota — what this account may still generate today.
+    // Read before generating so the UI can show an honest number rather than
+    // discovering the cap by hitting it.
+    if (url.pathname === '/v1/artwork/quota' && request.method === 'GET') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+      return json(await generationUsage(env, user.id), 200, authCorsHeaders);
+    }
+
+    // POST /v1/artwork/generate { gameId, prompt } -> raw image bytes.
+    //
+    // The response is the image itself rather than JSON wrapping base64. That is
+    // a third fewer bytes on the wire and, more importantly, it lets the browser
+    // hand the Blob straight to the canvas pipeline with no decode-encode round
+    // trip in between.
+    if (url.pathname === '/v1/artwork/generate' && request.method === 'POST') {
+      if (!authCorsHeaders) {
+        return json({ error: 'origin_not_allowed' }, 403, cors);
+      }
+      const user = await resolveUser(env, request);
+      if (!user) return json({ error: 'unauthorized' }, 401, authCorsHeaders);
+
+      // Burst limiter first: it is cheap and keyed in KV, and it is what stops a
+      // script from reaching the expensive path at all.
+      const throttled = await throttleWrite(
+        request, env, 'artwork:generate', user.id, authCorsHeaders,
+      );
+      if (throttled) return throttled;
+
+      // Fail early and clearly when no key is configured. Without this the
+      // player sees a generic 500 for a missing deployment secret.
+      if (!env.GEMINI_API_KEY) {
+        return json({ error: 'artwork_not_configured' }, 503, authCorsHeaders);
+      }
+
+      const body = await readJsonBody(request);
+      const gameId = typeof body?.gameId === 'string' ? body.gameId.trim() : '';
+      if (!/^[A-Za-z0-9-]{1,64}$/.test(gameId)) {
+        return json({ error: 'game_id_invalid' }, 400, authCorsHeaders);
+      }
+
+      let prompt;
+      try {
+        prompt = parsePrompt(body?.prompt);
+      } catch (err) {
+        return json({ error: err?.message || 'prompt_invalid' }, 400, authCorsHeaders);
+      }
+
+      // Ownership before quota. Spending a slot to find out the caller does not
+      // own the game would let any account probe ids for free.
+      const admin = isAdmin(env, user.id);
+      if (!(await canWriteGame(env, gameId, user.id, { admin }))) {
+        return json({ error: 'not_found' }, 404, authCorsHeaders);
+      }
+
+      // Checked and reserved before the upstream call. The reservation is what
+      // makes the cap un-raceable: a concurrent request sees the inserted row.
+      const quota = await quotaStatus(env, user.id);
+      if (!quota.allowed) {
+        return json(
+          {
+            error: 'artwork_quota_exhausted',
+            limit: quota.limit,
+            used: quota.used,
+            retryAfterSeconds: secondsUntilNextPacificDay(),
+          },
+          429,
+          authCorsHeaders,
+          { 'Retry-After': String(secondsUntilNextPacificDay()) },
+        );
+      }
+      if (!(await reserveGeneration(env, user.id, gameId))) {
+        return json({ error: 'artwork_quota_unavailable' }, 503, authCorsHeaders);
+      }
+
+      let image;
+      try {
+        image = await generateImage(env, prompt);
+      } catch (err) {
+        return json({ error: err?.message || 'artwork_failed' }, 502, authCorsHeaders);
+      }
+
+      return new Response(image.bytes, {
+        status: 200,
+        headers: {
+          'Content-Type': image.contentType,
+          // Not cached: every call is a different image, and a cache that
+          // returned yesterday's thumbnail for today's prompt would be very
+          // confusing.
+          'Cache-Control': 'no-store',
+          ...authCorsHeaders,
+        },
+      });
     }
 
     // DELETE /v1/games/:id/thumb — go back to the generated artwork.

@@ -1421,6 +1421,55 @@
   line-height: 1.5;
 }
 
+/* --- AI artwork generator ---------------------------------------------------
+   Sits inside the thumbnail field rather than beside it, because it produces
+   exactly the same thing: a pending replacement. Making it a separate-looking
+   section would imply it uploads somewhere else. */
+
+.wb-gen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.wb-gen-quota {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.wb-gen-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--fill);
+}
+
+.wb-gen-panel .wb-field {
+  margin: 0;
+}
+
+.wb-gen-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wb-gen-actions .wb-upload-pick {
+  flex: none;
+}
+
+.wb-gen-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.5;
+}
+
 /* --- Creator access ------------------------------------------------------- */
 
 .wb-creator-form {

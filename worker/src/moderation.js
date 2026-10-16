@@ -48,6 +48,11 @@ const WRITE_POLICIES = {
   'games:delete': { limit: 120, windowSeconds: 3600 },
   'games:review': { limit: 120, windowSeconds: 3600 },
   'builtin:thumb': { limit: 60, windowSeconds: 3600 },
+  // AI artwork generation. Much tighter than the other media paths because each
+  // call spends a shared, metered, per-project quota rather than our own bytes
+  // — eight in ten minutes is already generous for someone art-directing a
+  // single thumbnail, and the D1 daily allowance is the real ceiling behind it.
+  'artwork:generate': { limit: 8, windowSeconds: 600 },
   'progress:save': { limit: 300, windowSeconds: 3600 },
 };
 

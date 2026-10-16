@@ -65,18 +65,21 @@ function loadGis() {
 
 export async function apiFetch(path, init = {}) {
   const url = `${apiBase()}${path}`;
+  // `raw` is ours, not fetch's. It must be pulled out of the init object or it
+  // is passed straight through to fetch as an unknown option.
+  const { raw = false, ...rest } = init;
   // Cookie auth (legacy Google) needs credentials; Supabase auth needs a bearer
   // token. Sending both is harmless and keeps one call site for both modes.
   const token = getSupabaseToken();
 
-  const headers = { 'Content-Type': 'application/json', ...(init.headers || {}) };
+  const headers = { 'Content-Type': 'application/json', ...(rest.headers || {}) };
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res;
   try {
     res = await fetch(url, {
       credentials: 'include',
-      ...init,
+      ...rest,
       headers,
     });
   } catch (cause) {
@@ -88,6 +91,22 @@ export async function apiFetch(path, init = {}) {
     err.url = url;
     console.error('[whitebox] request never left the browser:', url, cause);
     throw err;
+  }
+
+  // Raw mode hands back the Response untouched so the caller can read the bytes.
+  // Only used for the artwork endpoint, whose success body is an image rather
+  // than JSON — parsing it here would destroy it.
+  if (raw) {
+    if (!res.ok) {
+      // Errors are still JSON everywhere else, so the reason is unwrapped the
+      // same way rather than surfacing an opaque status.
+      const data = await res.json().catch(() => ({}));
+      const err = new Error(data.error || `request_failed:${res.status}`);
+      err.status = res.status;
+      err.retryAfterSeconds = data.retryAfterSeconds;
+      throw err;
+    }
+    return res;
   }
 
   let data = {};

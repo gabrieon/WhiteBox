@@ -18,6 +18,7 @@ import ModerationQueue from './ModerationQueue.jsx';
 import BuiltinArtwork from './BuiltinArtwork.jsx';
 import QuizBuilder from './QuizBuilder.jsx';
 import CreatorAccess from './CreatorAccess.jsx';
+import ArtworkGenerator from './ArtworkGenerator.jsx';
 import { quizProblems, toPayload } from '../sdk/games/quiz.js';
 
 const TEMPLATES = [
@@ -348,6 +349,19 @@ export default function CreateGame({
       return null;
     });
     if (fileRef.current) fileRef.current.value = '';
+  }
+
+  // Replace the pending image, releasing whatever it displaces.
+  //
+  // Exists because there are now two sources of a prepared thumbnail — a picked
+  // file and a generated one — and both must go through the same revocation.
+  // Setting state directly from a second place leaks one object URL per swap,
+  // which is invisible until the tab has been edited forty times.
+  function stagePendingImage(prepared) {
+    setPendingThumb((prev) => {
+      if (prev) revokePreview(prev.preview);
+      return prepared;
+    });
   }
 
   async function handleSubmit(e) {
@@ -689,10 +703,27 @@ export default function CreateGame({
                 onChange={handlePickImage}
               />
             </div>
+
+            {/* Generation is offered once there is a game to hang it on. A
+                brand-new game has no id yet and the endpoint checks ownership
+                against one, so the button appears only while editing — by which
+                point the game exists and is provably yours. */}
+            {editing && (
+              <ArtworkGenerator
+                // Remounting per game guarantees the seeded prompt and the
+                // remaining-allowance read belong to the game actually open.
+                // Without it, editing a second game keeps the first one's prompt.
+                key={editing.id}
+                game={editing}
+                onReady={stagePendingImage}
+                disabled={preparing}
+              />
+            )}
+
             <span className="wb-field-hint">
               {editing
                 ? 'Replaces the current thumbnail when you save.'
-                : 'Optional. Cropped and compressed in your browser.'}
+                : 'Optional. Cropped and compressed in your browser. Save the game first, then you can generate one.'}
             </span>
           </label>
 
