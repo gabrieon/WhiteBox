@@ -43,6 +43,7 @@ export default function ArtworkGenerator({
   const [prompt, setPrompt] = useState('');
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState(0);
   const [error, setError] = useState('');
 
   // The suggestion is seeded by the click that opens the panel rather than by an
@@ -66,14 +67,30 @@ export default function ArtworkGenerator({
     return () => { alive = false; };
   }, [open]);
 
+  // What the button says while it works. True progress is unavailable — the
+// request is one opaque upstream call — so these are honest stages, not a
+// percentage pretending to measure something. A static "Generating…" for up
+// to twenty seconds reads as hung; a stage that advances reads as working.
+//
+// Module scope, not component scope: the stages never change, and defining
+// them inside would recreate the array every render for no reason.
+const STAGES = ['Contacting the image service…', 'Drawing your thumbnail…', 'Preparing the image…'];
+
   const run = useCallback(async () => {
     setError('');
     setBusy(true);
+    setStage(0);
+    // The draw stage is the long one. Advancing the label on a timer is the
+    // only signal available; it is cleared the moment the bytes land.
+    const stageTimer = setInterval(() => {
+      setStage((s) => Math.min(s + 1, STAGES.length - 1));
+    }, 6000);
     try {
       const blob = await generateArtwork(game.id, prompt);
       // Same pipeline as a picked file, so a generated image is cropped to the
       // card ratio and compressed exactly like a photo rather than arriving
       // 1K and full weight.
+      setStage(2);
       const prepared = await prepareThumbnail(blob);
       onReady(prepared);
       setOpen(false);
@@ -85,8 +102,12 @@ export default function ArtworkGenerator({
         .then(setQuota)
         .catch(() => {});
     } finally {
+      clearInterval(stageTimer);
       setBusy(false);
+      setStage(0);
     }
+    // STAGES is a module constant, not state or props — it cannot change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.id, onReady, prompt]);
 
   const exhausted = quota !== null && quota.remaining <= 0;
@@ -138,7 +159,7 @@ export default function ArtworkGenerator({
           onClick={run}
           disabled={busy || exhausted || !prompt.trim()}
         >
-          {busy ? 'Generating…' : 'Generate'}
+          {busy ? STAGES[stage] : 'Generate'}
         </button>
         <button
           type="button"

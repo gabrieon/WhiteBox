@@ -19,7 +19,9 @@ import {
   fetchBuiltinThumbs,
   BUILTIN_THUMBS_CHANGED,
 } from './sdk/games/api.js';
-import { matchesGameText } from './sdk/games/search.js';
+import {
+  forgetRecentSearch, matchesGameText, recentSearches, recordRecentSearch,
+} from './sdk/games/search.js';
 
 // --- play history ------------------------------------------------------------
 // Historical play counts power the Top Played row:
@@ -436,6 +438,23 @@ export default function App() {
   const [category, setCategory] = useState(ALL_CATEGORIES);
   const searchRef = useRef(null);
 
+  // Recent searches, shown as a dropdown while the box is focused and empty.
+  // Loaded lazily on first focus rather than at mount: most visits never touch
+  // search, so there is no reason to read storage for all of them.
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recents, setRecents] = useState(null);
+
+  function refreshRecents() {
+    setRecents(recentSearches());
+  }
+
+  function submitSearch(value) {
+    // Recorded on submit, not on change. Every keystroke is not a search; the
+    // one the player committed to with Enter is.
+    setRecents(recordRecentSearch(value));
+    searchRef.current?.blur();
+  }
+
   // "/" jumps to search (unless you're already typing somewhere) and Escape
   // clears it — the shortcuts people expect from a store search box.
   useEffect(() => {
@@ -675,7 +694,16 @@ export default function App() {
               placeholder="Search games"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => { setSearchFocused(true); refreshRecents(); }}
+              onBlur={() => setSearchFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && query.trim()) submitSearch(query);
+              }}
               aria-label="Search games"
+              aria-expanded={searchFocused && !query.trim() && (recents?.length || 0) > 0}
+              aria-controls="wb-search-recents"
+              role="combobox"
+              aria-autocomplete="list"
             />
             {query && (
               <button
@@ -686,6 +714,41 @@ export default function App() {
               >
                 <ClearIcon />
               </button>
+            )}
+            {/* Recent searches. Shown only while focused and empty — anything
+                else and the list fights the live results for attention. Blur
+                hides it, so rows use onMouseDown rather than onClick: the click
+                would never land because the list unmounts first. */}
+            {searchFocused && !query.trim() && (recents?.length || 0) > 0 && (
+              <ul className="wb-search-recents" id="wb-search-recents" role="listbox" aria-label="Recent searches">
+                {recents.map((recent) => (
+                  <li key={recent.toLowerCase()} role="option" aria-selected="false">
+                    <button
+                      type="button"
+                      className="wb-search-recent"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setQuery(recent);
+                        searchRef.current?.blur();
+                      }}
+                    >
+                      <span aria-hidden="true">↺</span>
+                      <span>{recent}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="wb-search-forget"
+                      aria-label={`Remove ${recent} from recent searches`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setRecents(forgetRecentSearch(recent));
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
