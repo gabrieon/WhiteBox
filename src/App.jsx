@@ -14,6 +14,7 @@ import { supabaseEnabled } from './sdk/auth/supabaseClient.js';
 import { useAuth } from './sdk/auth/authContext.js';
 import { listLocalProgress, pullProgress } from './sdk/auth/progress.js';
 import { fetchCreatedGames, fetchBuiltinThumbs } from './sdk/games/api.js';
+import { matchesGameText } from './sdk/games/search.js';
 
 // --- play history ------------------------------------------------------------
 // Historical play counts power the Top Played row:
@@ -48,19 +49,18 @@ function readPlays() {  try {
   }
 }
 
-// Curated trending row. Deliberately short while the library has one built-in
-// game: the row falls back to this shortlist for a visitor with no history, and
+// Curated trending row. Deliberately short while the library has three built-in
+// games: the row falls back to this shortlist for a visitor with no history, and
 // padding it with ids that no longer exist would only mean dead entries.
-const TRENDING_IDS = ['word-lock', 'pair-vault'];
+const TRENDING_IDS = ['word-lock', 'pair-vault', 'odd-spot'];
 
 const ALL_CATEGORIES = 'All';
 
 // The header search is site-wide: it narrows every row, not just the catalog.
-// An empty query matches everything, so this is a no-op until the user types.
+// Matching lives in the SDK so discovery rules are unit-tested; an empty
+// query matches everything, so this is a no-op until the user types.
 function matchesText(game, q) {
-  if (!q) return true;
-  return game.title.toLowerCase().includes(q)
-    || game.description.toLowerCase().includes(q);
+  return matchesGameText(game, q);
 }
 
 // "3h ago" — reuses the `now` captured at mount, so this stays a pure render.

@@ -1,0 +1,197 @@
+/* Odd Spot — scoped to its own play surface.
+   Black like the other fullscreen games: one visual language for “you are
+   playing now,” separate from the monochrome library. Nine large tiles keep
+   every target comfortably tappable. */
+
+.os-root {
+  --os-line: #ffffff26;
+  --os-text: #f2f2f2;
+  --os-dim: #9a9a9a;
+  --os-tile: #171717;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  padding: 20px 16px 40px;
+  background: #000;
+  color: var(--os-text);
+  font-family: var(--font-body, 'Segoe UI', sans-serif);
+}
+
+.os-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin-bottom: 18px;
+}
+
+.os-logo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.os-sub {
+  margin: 6px 0 0;
+  color: var(--os-dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.os-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.os-timer {
+  min-width: 76px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.os-exit {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--os-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--os-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.os-exit:hover {
+  border-color: var(--os-dim);
+  color: var(--os-text);
+}
+
+.os-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+}
+
+/* 72px minimum: nine competing targets need more room than a solitary button.
+   A miss here costs score, so the layout spends pixels on accuracy. */
+.os-tile {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  aspect-ratio: 1;
+  border: 2px solid var(--os-line);
+  border-radius: 12px;
+  background: var(--os-tile);
+  color: var(--os-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: clamp(30px, 9vw, 44px);
+  font-weight: 800;
+  transition: transform 120ms ease, border-color 160ms ease;
+}
+
+.os-tile:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: #ffffff59;
+}
+
+.os-tile:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.os-tile:disabled {
+  cursor: default;
+}
+
+.os-hint {
+  margin: 18px 0 0;
+  max-width: 46ch;
+  color: var(--os-dim);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.os-outcome {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid var(--os-line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.os-outcome-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.os-outcome-detail {
+  margin: 0 0 12px;
+  color: var(--os-dim);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.os-outcome-detail + .os-outcome-detail {
+  margin-top: -6px;
+}
+
+.os-outcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.os-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--os-text);
+  color: #000;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.os-btn.is-ghost {
+  border-color: var(--os-line);
+  background: transparent;
+  color: var(--os-text);
+}
+
+@media (max-width: 420px) {
+  .os-board {
+    gap: 8px;
+  }
+
+  .os-tile {
+    min-height: 68px;
+    border-radius: 10px;
+  }
+}
+
+@media (pointer: coarse) {
+  .os-exit,
+  .os-btn {
+    min-height: 48px;
+  }
+}

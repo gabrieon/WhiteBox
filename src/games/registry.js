@@ -15,6 +15,7 @@
 import { normalizeManifest, validateManifest } from '../sdk/manifest.js';
 import wordLock from './word-lock/manifest.js';
 import pairVault from './memory-match/manifest.js';
+import oddSpot from './odd-spot/manifest.js';
 
 const registry = new Map();
 
@@ -49,8 +50,9 @@ export function registerGame(manifest) {
 // into the library bundle for visitors who never open it.
 wordLock.loader = () => import('./word-lock/WordLock.jsx');
 pairVault.loader = () => import('./memory-match/PairVault.jsx');
+oddSpot.loader = () => import('./odd-spot/OddSpot.jsx');
 
-const builtIns = [wordLock, pairVault];
+const builtIns = [wordLock, pairVault, oddSpot];
 
 builtIns.forEach(registerGame);
 
